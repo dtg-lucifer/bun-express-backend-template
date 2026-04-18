@@ -1,0 +1,75 @@
+server:
+    host: localhost
+    port: 8989
+    api_prefix: /api/v1
+    environment: development
+
+security:
+    helmet:
+        enabled: true
+        content_security_policy: true
+    cors:
+        enabled: true
+        origins:
+            - http://localhost:3000
+            - http://localhost:5173
+    rate_limit:
+        enabled: true
+        window_ms: 900000
+        max_requests: 100
+        skip_localhost: true
+
+database:
+    pool_size: 10
+    connection_timeout: 10000
+
+logging:
+    level: info
+    format: simple
+    enable_colors: true
+    log_requests: true
+    log_errors: true
+
+middlewares:
+    request_id:
+        enabled: true
+        header_name: X-Request-ID
+    body_parser:
+        enabled: true
+        json_limit: 10mb
+        urlencoded_limit: 10mb
+    dependency_injection:
+        enabled: true
+    logger:
+        enabled: true
+    rate_limit:
+        enabled: true
+        window_ms: 1000
+        max_requests: 5
+        skip_localhost: true
+
+routes:
+    health:
+        enabled: true
+        path: /
+    auth:
+        enabled: true
+        path: /auth
+
+documentation:
+    swagger:
+        enabled: true
+        path: /docs
+        openapi_file: openapi.yaml
+
+rbac:
+    enabled: true
+    roles:
+        - admin
+        - user
+    permissions:
+        admin:
+            - MANAGE_USERS
+            - VIEW_AUDIT_LOGS
+        user:
+            - READ_SELF

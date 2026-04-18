@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
         "target": "esnext",
         "module": "nodenext",
         "moduleResolution": "nodenext",
@@ -19,11 +20,12 @@
         "skipLibCheck": true,
         "paths": {
             "@/*": ["./*"],
-            "@config/*": ["./config/*"],
-            "@core/*": ["./core/*"],
-            "@modules/*": ["./modules/*"],
-            "@db/*": ["./db/*"],
-            "@types/*": ["./types/*"]
+            "@config/*": ["./src/config/*"],
+            "@lib/*": ["./src/lib/*"],
+            "@core/*": ["./src/core/*"],
+            "@modules/*": ["./src/modules/*"],
+            "@db/*": ["./src/db/*"],
+            "@types/*": ["./src/types/*"]
         },
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true

@@ -1,0 +1,85 @@
+services:
+    postgres:
+        image: postgres:15
+        container_name: postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: test_db
+            POSTGRES_USER: piush
+            POSTGRES_PASSWORD: root_access
+        ports:
+            - "5432:5432"
+        volumes:
+            - pg-data:/var/lib/postgresql/data
+            - ./init/init-uuid.sql:/docker-entrypoint-initdb.d/init-uuid.sql
+        networks:
+            - default_network
+    redis:
+        image: redis:8.2.2-alpine
+        container_name: redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis-data:/data
+            - ./redis.conf:/usr/local/etc/redis/redis.conf # Custom config
+            - ./logs:/var/log/redis # Persistent logs on host
+        command:
+            [
+                "sh",
+                "-c",
+                "mkdir -p /var/log/redis && redis-server
+                  /usr/local/etc/redis/redis.conf",
+            ]
+        networks:
+            - default_network
+
+    # ----------------------------------------------------------
+    # Logging and Monitoring Services
+    loki:
+        image: grafana/loki:2.9.3
+        ports:
+            - "3100:3100"
+        command: -config.file=/etc/loki/local-config.yaml
+        networks:
+            - default_network
+
+    promtail:
+        image: grafana/promtail:2.9.3
+        ports:
+            - "9080:9080"
+        volumes:
+            - ../logs:/var/log/default
+            - ./promtail-config.yaml:/etc/promtail/config.yaml
+        command: -config.file=/etc/promtail/config.yaml
+        depends_on:
+            - loki
+        networks:
+            - default_network
+
+    prometheus:
+        image: prom/prometheus:latest
+        ports:
+            - "9090:9090"
+        volumes:
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        networks:
+            - default_network
+
+    grafana:
+        image: grafana/grafana:10.2.3
+        ports:
+            - "3000:3000"
+        depends_on:
+            - loki
+            - prometheus
+        networks:
+            - default_network
+
+volumes:
+    pg-data:
+    redis-data:
+
+networks:
+    default_network:
+        driver: bridge

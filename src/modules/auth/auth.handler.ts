@@ -1,13 +1,13 @@
-import type { AppDependencies } from "@core/middlewares";
+import { type NextFunction, type Request, type Response, Router } from "express";
+import type { AppDependencies } from "~/core/middlewares";
 import {
     type AuthRequest,
     asyncHandler,
     authenticate,
     generateRefreshToken,
     generateToken,
-} from "@core/middlewares";
-import { api_response } from "@core/utils/api_response.js";
-import { type NextFunction, type Request, type Response, Router } from "express";
+} from "~/core/middlewares";
+import { api_response } from "~/core/utils/api_response.js";
 import { login_schema, register_schema } from "./auth.dto";
 import { AuthService } from "./auth.service";
 

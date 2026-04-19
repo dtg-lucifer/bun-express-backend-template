@@ -1,6 +1,6 @@
-import type { AppDependencies } from "@core/middlewares";
-import { createAuthRouter } from "@modules/auth/auth.handler";
 import type { Express } from "express";
+import type { AppDependencies } from "~/core/middlewares";
+import { createAuthRouter } from "~/modules/auth/auth.handler";
 import { healthcheck_router } from "./health";
 
 /**

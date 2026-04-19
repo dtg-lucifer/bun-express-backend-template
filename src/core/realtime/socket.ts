@@ -1,7 +1,7 @@
 import type { Server as HTTPServer } from "node:http";
-import type { DomainEventBus } from "@core/events";
-import { log } from "@core/middlewares";
 import { Server as SocketIOServer } from "socket.io";
+import type { DomainEventBus } from "~/core/events";
+import { log } from "~/core/middlewares";
 
 interface SetupSocketServerInput {
     eventBus: DomainEventBus;

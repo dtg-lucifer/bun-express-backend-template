@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { configManager } from "@config/index";
-import { log } from "@core/middlewares";
-import { closeQueueResources, startQueueWorker } from "@core/queues";
+import { configManager } from "~/config/index";
+import { log } from "~/core/middlewares";
+import { closeQueueResources, startQueueWorker } from "~/core/queues";
 
 const workersConfig = configManager.getWorkersConfig();
 const queueConfig = configManager.getQueueConfig();

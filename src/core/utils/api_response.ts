@@ -1,5 +1,5 @@
-import { log } from "@core/middlewares";
 import type { Response } from "express";
+import { log } from "~/core/middlewares";
 
 export class AuthError extends Error {
     statusCode: number;

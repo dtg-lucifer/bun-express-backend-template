@@ -1,7 +1,7 @@
-import type { DomainEventBus } from "@core/events";
 import type { NextFunction, Request, Response } from "express";
 import type { Pool } from "pg";
 import type { Server as SocketIOServer } from "socket.io";
+import type { DomainEventBus } from "~/core/events";
 import { log } from "./logger";
 
 export interface AppDependencies {

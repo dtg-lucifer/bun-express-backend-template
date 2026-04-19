@@ -1,9 +1,8 @@
-import { configManager } from "@config/index";
-import { log } from "@core/middlewares";
-import { Server, type ServerCfg } from "@core/server";
-import { shutdown_handler } from "@lib/shutdown";
-
 import * as dotenv from "dotenv";
+import { configManager } from "~/config/index";
+import { log } from "~/core/middlewares";
+import { Server, type ServerCfg } from "~/core/server";
+import { shutdown_handler } from "~/lib/shutdown";
 
 // Load environment variables first
 dotenv.config();

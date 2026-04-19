@@ -1,7 +1,7 @@
-import { configManager } from "@config/index";
-import type { DomainEventBus } from "@core/events";
-import { log } from "@core/middlewares";
-import { enqueueWelcomeEmailJob } from "@core/queues";
+import { configManager } from "~/config/index";
+import type { DomainEventBus } from "~/core/events";
+import { log } from "~/core/middlewares";
+import { enqueueWelcomeEmailJob } from "~/core/queues";
 
 let handlersRegistered = false;
 

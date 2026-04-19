@@ -1,12 +1,15 @@
 import fs from "node:fs";
 
-import { log } from "@core/middlewares";
+import { log } from "~/core/middlewares";
 
 export enum EVENT_CATEGORY {
     GENERAL = "GENERAL",
     TECH = "TECH",
     CULTURAL = "CULTURAL",
 }
+
+const _BRACKET_REGEX = /^(.*?)\s*\((.*?)\)\s*$/;
+const _TEAM_REGEX = /^([^(]+)/;
 
 /**
  * Parse comma-separated values with proper trimming and quote handling
@@ -38,7 +41,7 @@ export function parseTeamNames(teamsString: string): string[] {
         .split(",")
         .map((team) => {
             // Extract team name before parenthesis or use full string if no parenthesis
-            const match = team.trim().match(/^([^(]+)/);
+            const match = team.trim().match(_TEAM_REGEX);
             return match?.[1]?.trim() || team.trim();
         })
         .filter((team) => team.length > 0);

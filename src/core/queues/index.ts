@@ -1,7 +1,7 @@
-import { configManager } from "@config/index";
-import { log } from "@core/middlewares";
 import { type Job, type JobsOptions, Queue, Worker } from "bullmq";
 import IORedis from "ioredis";
+import { configManager } from "~/config/index";
+import { log } from "~/core/middlewares";
 
 export interface WelcomeEmailJobData {
     email: string;

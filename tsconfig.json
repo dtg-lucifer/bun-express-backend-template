@@ -19,13 +19,13 @@
         "resolveJsonModule": true,
         "skipLibCheck": true,
         "paths": {
-            "@/*": ["./*"],
-            "@config/*": ["./src/config/*"],
-            "@lib/*": ["./src/lib/*"],
-            "@core/*": ["./src/core/*"],
-            "@modules/*": ["./src/modules/*"],
-            "@db/*": ["./src/db/*"],
-            "@types/*": ["./src/types/*"]
+            "~/*": ["./src/*"],
+            "~/config/*": ["./src/config/*"],
+            "~/lib/*": ["./src/lib/*"],
+            "~/core/*": ["./src/core/*"],
+            "~/modules/*": ["./src/modules/*"],
+            "~/db/*": ["./src/db/*"],
+            "~/types/*": ["./src/types/*"]
         },
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true

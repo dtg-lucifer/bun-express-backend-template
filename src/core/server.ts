@@ -1,12 +1,6 @@
 import fs from "node:fs";
 import { createServer, type Server as HTTPServer } from "node:http";
 import path from "node:path";
-import { type AppConfig, configManager } from "@config/index";
-import { createDomainEventBus, type DomainEventBus } from "@core/events";
-import { closeQueueResources } from "@core/queues";
-import { setupSocketServer } from "@core/realtime";
-import { registerHttpRoutes } from "@core/routes";
-import { registerAuthEventHandlers } from "@modules/auth/auth.events";
 import cors from "cors";
 import express, { type Express } from "express";
 import rateLimit from "express-rate-limit";
@@ -15,6 +9,12 @@ import { Pool } from "pg";
 import type { Server as SocketIOServer } from "socket.io";
 import * as swaggerui from "swagger-ui-express";
 import * as YAML from "yaml";
+import { type AppConfig, configManager } from "~/config/index";
+import { createDomainEventBus, type DomainEventBus } from "~/core/events";
+import { closeQueueResources } from "~/core/queues";
+import { setupSocketServer } from "~/core/realtime";
+import { registerHttpRoutes } from "~/core/routes";
+import { registerAuthEventHandlers } from "~/modules/auth/auth.events";
 import {
     type AppDependencies,
     audit_logger,

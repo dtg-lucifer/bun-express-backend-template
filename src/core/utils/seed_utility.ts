@@ -1,4 +1,5 @@
-import fs from "fs";
+import fs from "node:fs";
+
 import { log } from "@core/middlewares";
 
 export enum EVENT_CATEGORY {

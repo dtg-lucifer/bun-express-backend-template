@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
-import YAML from "yaml";
+import * as YAML from "yaml";
 import { z } from "zod";
 
 const documentationSchema = z.object({

@@ -34,6 +34,22 @@ services:
         networks:
             - default_network
 
+    bullmq-worker:
+        image: oven/bun:1.2.22
+        container_name: bullmq-worker
+        restart: unless-stopped
+        working_dir: /app
+        volumes:
+            - ../:/app
+        env_file:
+            - ../.env
+        command: [ "sh", "-c", "bun install --frozen-lockfile && bun run worker:start" ]
+        depends_on:
+            - redis
+            - postgres
+        networks:
+            - default_network
+
     # ----------------------------------------------------------
     # Logging and Monitoring Services
     loki:

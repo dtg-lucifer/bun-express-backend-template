@@ -1,12 +1,14 @@
 {
     "name": "backend-template-expressjs",
     "version": "1.0.0",
-    "description": "Basic Express.js backend template with TypeScript, Biome, pnpm and Typespec for documentation",
+    "description": "Express.js backend template with TypeScript, Bun, Biome and TypeSpec documentation",
     "main": "index.js",
     "scripts": {
         "dev": "bun run --watch src/index.ts",
         "build": "bun build src/index.ts --outdir=./dist --minify --target=bun",
         "start": "bun dist/index.js",
+        "worker:dev": "bun run --watch src/workers/index.ts",
+        "worker:start": "bun run src/workers/index.ts",
         "lint": "biome check .",
         "lint:fix": "biome check --write .",
         "format": "biome format --write .",
@@ -15,13 +17,13 @@
         "docs:watch": "tsp compile docs --emit=@typespec/openapi3 --output-dir . --watch",
         "db:migrate": "node-pg-migrate up --migrations-dir=src/db/migrations",
         "db:migrate:down": "node-pg-migrate down --migrations-dir=src/db/migrations",
+        "db:migrate:status": "node-pg-migrate status --migrations-dir=src/db/migrations",
         "db:migrate:new": "node-pg-migrate create --migration-file-language=sql --migrations-dir=src/db/migrations"
     },
-
     "keywords": [],
     "author": "",
     "license": "ISC",
-    "packageManager": "pnpm@10.32.1",
+    "packageManager": "bun@1.2.22",
     "devDependencies": {
         "@biomejs/biome": "^2.4.12",
         "@typespec/compiler": "^1.0.0",
@@ -38,6 +40,7 @@
         "@types/bun": "latest"
     },
     "dependencies": {
+        "bullmq": "^5.61.0",
         "cors": "^2.8.6",
         "dotenv": "^17.4.2",
         "express": "^5.2.1",
@@ -45,13 +48,14 @@
         "helmet": "^8.1.0",
         "ioredis": "^5.10.1",
         "jsonwebtoken": "^9.0.3",
+        "morgan": "^1.10.1",
         "node-pg-migrate": "^8.0.3",
         "pg": "^8.16.3",
-        "morgan": "^1.10.1",
+        "socket.io": "^4.8.3",
         "swagger-ui-express": "^5.0.1",
-        "yaml": "^2.8.3",
         "uuid": "^13.0.0",
         "winston": "^3.19.0",
+        "yaml": "^2.8.3",
         "zod": "^4.3.6"
     },
     "private": true,

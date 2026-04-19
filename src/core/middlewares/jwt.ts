@@ -7,7 +7,6 @@ export interface AuthRequest extends Request {
     user?: {
         id: string;
         email: string;
-        role: string;
     };
     token?: string;
 }
@@ -15,7 +14,6 @@ export interface AuthRequest extends Request {
 interface TokenPayload {
     id: string;
     email: string;
-    role: string;
 }
 
 const parseTokenPayload = (decoded: string | jwt.JwtPayload): TokenPayload | null => {
@@ -25,13 +23,12 @@ const parseTokenPayload = (decoded: string | jwt.JwtPayload): TokenPayload | nul
 
     const id = decoded.id;
     const email = decoded.email;
-    const role = decoded.role;
 
-    if (typeof id !== "string" || typeof email !== "string" || typeof role !== "string") {
+    if (typeof id !== "string" || typeof email !== "string") {
         return null;
     }
 
-    return { id, email, role };
+    return { id, email };
 };
 
 export const verifyToken = (token: string): TokenPayload | null => {
@@ -90,28 +87,6 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
         const response = api_response.error("Authentication failed", 401);
         return res.status(response.statusCode).json(response);
     }
-};
-
-export const authorize = (allowedRoles: string[]) => {
-    return (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            if (!req.user) {
-                const response = api_response.error("User not authenticated", 401);
-                return res.status(response.statusCode).json(response);
-            }
-
-            if (!allowedRoles.includes(req.user.role)) {
-                const response = api_response.error("Insufficient permissions", 403);
-                return res.status(response.statusCode).json(response);
-            }
-
-            next();
-        } catch (error) {
-            log.error("Authorization error:", error);
-            const response = api_response.error("Authorization failed", 403);
-            return res.status(response.statusCode).json(response);
-        }
-    };
 };
 
 export const optionalAuth = (req: AuthRequest, _res: Response, next: NextFunction) => {

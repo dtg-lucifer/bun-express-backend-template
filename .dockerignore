@@ -1,0 +1,11 @@
+node_modules/
+dist/
+
+.github/
+.agents/
+.env
+.env.example
+
+docker/
+docs/
+logs/

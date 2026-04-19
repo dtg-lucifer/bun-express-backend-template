@@ -1,23 +1,28 @@
+import fs from "node:fs";
+import { createServer, type Server as HTTPServer } from "node:http";
+import path from "node:path";
+import { type AppConfig, configManager } from "@config/index";
+import { createDomainEventBus, type DomainEventBus } from "@core/events";
+import { closeQueueResources } from "@core/queues";
+import { setupSocketServer } from "@core/realtime";
+import { registerHttpRoutes } from "@core/routes";
+import { registerAuthEventHandlers } from "@modules/auth/auth.events";
 import cors from "cors";
 import express, { type Express } from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import fs from "node:fs";
-import path from "node:path";
 import { Pool } from "pg";
-import swaggerui from "swagger-ui-express";
-import YAML from "yaml";
-
+import type { Server as SocketIOServer } from "socket.io";
+import * as swaggerui from "swagger-ui-express";
+import * as YAML from "yaml";
 import {
+    type AppDependencies,
     audit_logger,
     createDependencyInjectionMiddleware,
     log,
     requestid_middleware,
     winston_logger,
 } from "./middlewares";
-import { healthcheck_router } from "@core/routes";
-import { createAuthRouter } from "@modules/auth/auth.handler";
-import { type AppConfig, configManager } from "@config/index";
 
 export interface ServerCfg {
     port: number;
@@ -28,15 +33,21 @@ export interface ServerCfg {
 
 export class Server {
     app: Express;
+    httpServer: HTTPServer;
+    io: SocketIOServer | null;
     config: ServerCfg;
     appConfig: AppConfig;
     db: Pool | null;
+    eventBus: DomainEventBus;
 
     constructor(cfg: Partial<ServerCfg>) {
         this.app = express();
+        this.httpServer = createServer(this.app);
+        this.io = null;
         this.appConfig = configManager.getConfig();
         this.config = Object.assign<ServerCfg, Partial<ServerCfg>>(this.defaultConfig(), cfg);
         this.db = null;
+        this.eventBus = createDomainEventBus();
     }
 
     defaultConfig(): ServerCfg {
@@ -57,6 +68,8 @@ export class Server {
         log.info(`API Prefix: ${this.appConfig.server.api_prefix}`);
 
         await this.setupDatabase();
+        this.setupRealtime();
+        this.setupEventHandlers();
         this.setupMiddlewares();
         this.setupRoutes();
         this.setupDocumentation();
@@ -64,8 +77,21 @@ export class Server {
         log.info("[SERVER] Setup completed successfully");
     }
 
+    private getDependencies(): AppDependencies {
+        if (!this.db) {
+            throw new Error("Database is not initialized");
+        }
+
+        return {
+            db: this.db,
+            eventBus: this.eventBus,
+            io: this.io ?? undefined,
+        };
+    }
+
     async setupDatabase() {
         const dbConfig = configManager.getDatabaseConfig();
+
         if (!Bun.env.DATABASE_URL) {
             throw new Error("DATABASE_URL is required");
         }
@@ -74,29 +100,50 @@ export class Server {
             connectionString: Bun.env.DATABASE_URL,
             max: dbConfig.pool_size,
             connectionTimeoutMillis: dbConfig.connection_timeout,
+            idleTimeoutMillis: dbConfig.idle_timeout,
         });
 
         await this.db.query("SELECT 1");
+
         log.info("[DATABASE] PostgreSQL connected successfully");
+        log.info(`[DATABASE] Pool size: ${dbConfig.pool_size}`);
+    }
+
+    setupEventHandlers() {
+        const queueConfig = configManager.getQueueConfig();
+
+        if (queueConfig.bullmq.enabled) {
+            registerAuthEventHandlers(this.eventBus);
+            log.info("[EVENTS] Registered domain event handlers");
+            return;
+        }
+
+        log.info("[EVENTS] Queue-backed auth handlers are disabled");
+    }
+
+    setupRealtime() {
+        const realtimeConfig = configManager.getRealtimeConfig();
+
+        if (!realtimeConfig.socketio.enabled) {
+            return;
+        }
+
+        this.io = setupSocketServer({
+            server: this.httpServer,
+            origins: this.config.origins,
+            path: realtimeConfig.socketio.path,
+            eventBus: this.eventBus,
+        });
+
+        log.info(`[SOCKET] Socket.IO enabled at ${realtimeConfig.socketio.path}`);
     }
 
     setupRoutes() {
-        const routesConfig = configManager.getRoutesConfig();
-
-        if (routesConfig.health.enabled) {
-            this.app.use(this.config.api_prefix + routesConfig.health.path, healthcheck_router);
-            log.info(
-                `[ROUTES] Health check: ${this.config.api_prefix}${routesConfig.health.path}healthcheck`,
-            );
-        }
-
-        if (routesConfig.auth.enabled && this.db) {
-            this.app.use(
-                this.config.api_prefix + routesConfig.auth.path,
-                createAuthRouter(this.db),
-            );
-            log.info(`[ROUTES] Auth: ${this.config.api_prefix}${routesConfig.auth.path}`);
-        }
+        const dependencies = this.getDependencies();
+        registerHttpRoutes(this.app, this.config.api_prefix, dependencies);
+        log.info(
+            `[ROUTES] Mounted under ${this.config.api_prefix} (edit src/core/routes/index.ts to change)`,
+        );
     }
 
     setupDocumentation() {
@@ -197,20 +244,46 @@ export class Server {
         }
 
         if (middlewaresConfig.dependency_injection.enabled && this.db) {
-            this.app.use(createDependencyInjectionMiddleware(this.db));
-            this.app.use(audit_logger(this.db));
+            const dependencies = this.getDependencies();
+            this.app.use(createDependencyInjectionMiddleware(dependencies));
+            this.app.use(audit_logger(dependencies.db));
         }
     }
 
     start() {
-        this.app.listen(this.config.port, () => {
+        this.httpServer.listen(this.config.port, () => {
             log.info(`[SERVER] Started on ${this.config.listen_addr}`);
         });
     }
 
     async shutdown() {
+        await closeQueueResources();
+
+        if (this.io) {
+            await new Promise<void>((resolve) => {
+                this.io?.close(() => resolve());
+            });
+            this.io = null;
+            log.info("[SERVER] Socket.IO server closed");
+        }
+
+        if (this.httpServer.listening) {
+            await new Promise<void>((resolve, reject) => {
+                this.httpServer.close((error) => {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    resolve();
+                });
+            });
+            log.info("[SERVER] HTTP server closed");
+        }
+
         if (this.db) {
             await this.db.end();
+            this.db = null;
             log.info("[SERVER] Database connection closed");
         }
     }

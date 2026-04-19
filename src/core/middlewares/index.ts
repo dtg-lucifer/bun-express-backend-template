@@ -11,7 +11,6 @@ export { audit_logger } from "./audit";
 
 export {
     authenticate,
-    authorize,
     type AuthRequest,
     generateRefreshToken,
     generateToken,
@@ -19,5 +18,3 @@ export {
     verifyRefreshToken,
     verifyToken,
 } from "./jwt";
-
-export { require_roles } from "./rbac";

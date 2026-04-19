@@ -2,11 +2,14 @@ openapi: 3.1.0
 info:
   title: Backend Template API
   version: 0.0.0
-tags: []
+tags:
+  - name: Health
+  - name: Authentication
 paths:
-  /api/v1/auth/admin-only:
-    get:
-      operationId: adminOnly
+  /auth/login:
+    post:
+      operationId: Auth_login
+      summary: Login user
       parameters: []
       responses:
         '200':
@@ -14,25 +17,85 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - success
-                  - message
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: object
+                anyOf:
+                  - type: object
+                    required:
+                      - success
+                      - message
+                      - statusCode
                     properties:
+                      success:
+                        type: boolean
                       message:
                         type: string
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/Models.User'
+                          accessToken:
+                            type: string
+                          refreshToken:
+                            type: string
+                        required:
+                          - user
+                          - accessToken
+                          - refreshToken
+                      statusCode:
+                        type: integer
+                        format: int32
+                      requestId:
+                        type: string
+                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Models.LoginRequest'
+  /auth/me:
+    get:
+      operationId: Auth_me
+      summary: Get current user
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: object
                     required:
+                      - success
                       - message
-  /api/v1/auth/login:
+                      - statusCode
+                    properties:
+                      success:
+                        type: boolean
+                      message:
+                        type: string
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/Models.User'
+                        required:
+                          - user
+                      statusCode:
+                        type: integer
+                        format: int32
+                      requestId:
+                        type: string
+                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
+      tags:
+        - Authentication
+  /auth/register:
     post:
-      operationId: login
+      operationId: Auth_register
+      summary: Register user
       parameters: []
       responses:
         '200':
@@ -40,34 +103,42 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - success
-                  - message
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
-                      tokens:
-                        $ref: '#/components/schemas/AuthTokens'
+                anyOf:
+                  - type: object
                     required:
-                      - user
-                      - tokens
+                      - success
+                      - message
+                      - statusCode
+                    properties:
+                      success:
+                        type: boolean
+                      message:
+                        type: string
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/Models.User'
+                        required:
+                          - user
+                      statusCode:
+                        type: integer
+                        format: int32
+                      requestId:
+                        type: string
+                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
+      tags:
+        - Authentication
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
-  /api/v1/auth/me:
+              $ref: '#/components/schemas/Models.RegisterRequest'
+  /healthcheck:
     get:
-      operationId: me
+      operationId: Health_healthcheck
+      summary: Health check
       parameters: []
       responses:
         '200':
@@ -75,78 +146,49 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - success
-                  - message
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
+                anyOf:
+                  - type: object
                     required:
-                      - user
-  /api/v1/auth/register:
-    post:
-      operationId: register
-      parameters: []
-      responses:
-        '201':
-          description: The request has succeeded and a new resource has been created as a result.
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - success
-                  - message
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    type: object
+                      - success
+                      - message
+                      - statusCode
                     properties:
-                      user:
-                        $ref: '#/components/schemas/User'
-                    required:
-                      - user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-  /api/v1/healthcheck:
-    get:
-      operationId: healthcheck
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - success
-                  - message
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: '#/components/schemas/HealthMetrics'
+                      success:
+                        type: boolean
+                      message:
+                        type: string
+                      data:
+                        $ref: '#/components/schemas/Models.HealthMetrics'
+                      statusCode:
+                        type: integer
+                        format: int32
+                      requestId:
+                        type: string
+                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
+      tags:
+        - Health
 components:
   schemas:
-    AuthTokens:
+    Models.ApiErrorResponse:
+      type: object
+      required:
+        - success
+        - message
+        - statusCode
+      properties:
+        success:
+          type: boolean
+          enum:
+            - false
+        message:
+          type: string
+        errors: {}
+        statusCode:
+          type: integer
+          format: int32
+        requestId:
+          type: string
+    Models.AuthTokens:
       type: object
       required:
         - accessToken
@@ -156,23 +198,87 @@ components:
           type: string
         refreshToken:
           type: string
-    HealthMetrics:
+    Models.HealthMetrics:
       type: object
       required:
         - status
         - timestamp
         - environment
-        - uptime
       properties:
         status:
           type: string
+          enum:
+            - healthy
+            - unhealthy
         timestamp:
           type: string
         environment:
           type: string
         uptime:
-          type: string
-    LoginRequest:
+          type: object
+          properties:
+            milliseconds:
+              type: integer
+              format: int64
+            formatted:
+              type: string
+            startedAt:
+              type: string
+          required:
+            - milliseconds
+            - formatted
+            - startedAt
+        memory:
+          type: object
+          properties:
+            used:
+              type: integer
+              format: int32
+            total:
+              type: integer
+              format: int32
+            unit:
+              type: string
+              enum:
+                - MB
+          required:
+            - used
+            - total
+            - unit
+        services:
+          type: object
+          properties:
+            database:
+              type: string
+              enum:
+                - connected
+                - error
+                - unknown
+          required:
+            - database
+        ping:
+          type: object
+          properties:
+            database:
+              anyOf:
+                - type: integer
+                  format: int32
+                - type: string
+                  enum:
+                    - error
+                    - unknown
+            server:
+              type: integer
+              format: int32
+            unit:
+              type: string
+              enum:
+                - ms
+          required:
+            - database
+            - server
+            - unit
+    Models.LoginRequest:
       type: object
       required:
         - email
@@ -182,7 +288,7 @@ components:
           type: string
         password:
           type: string
-    RegisterRequest:
+    Models.RegisterRequest:
       type: object
       required:
         - email
@@ -192,18 +298,17 @@ components:
           type: string
         password:
           type: string
-        role:
-          type: string
-    User:
+    Models.User:
       type: object
       required:
         - id
         - email
-        - role
       properties:
         id:
           type: string
         email:
           type: string
-        role:
-          type: string
+servers:
+  - url: http://localhost:8989/api/v1
+    description: Development server
+    variables: {}

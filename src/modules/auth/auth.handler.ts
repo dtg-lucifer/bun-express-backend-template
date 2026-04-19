@@ -1,19 +1,18 @@
 import { type Request, type Response, Router } from "express";
-import type { Pool } from "pg";
+import type { AppDependencies } from "@core/middlewares";
 import { api_response } from "@core/utils/api_response";
 import {
     authenticate,
     type AuthRequest,
     generateRefreshToken,
     generateToken,
-    require_roles,
 } from "@core/middlewares";
 import { login_schema, register_schema } from "./auth.dto";
 import { AuthService } from "./auth.service";
 
-export const createAuthRouter = (db: Pool) => {
+export const createAuthRouter = (dependencies: AppDependencies) => {
     const router = Router();
-    const service = new AuthService(db);
+    const service = new AuthService(dependencies.db, dependencies.eventBus);
 
     router.post("/register", async (req: Request, res: Response) => {
         const parsed = register_schema.safeParse(req.body);
@@ -96,21 +95,6 @@ export const createAuthRouter = (db: Pool) => {
         const response = api_response.success("Current user", { user }, 200, res);
         return res.status(response.statusCode).json(response);
     });
-
-    router.get(
-        "/admin-only",
-        authenticate,
-        require_roles(["admin"]),
-        (_req: Request, res: Response) => {
-            const response = api_response.success(
-                "Admin route access granted",
-                undefined,
-                200,
-                res,
-            );
-            return res.status(response.statusCode).json(response);
-        },
-    );
 
     return router;
 };

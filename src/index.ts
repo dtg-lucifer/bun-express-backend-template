@@ -3,7 +3,7 @@ import { log } from "@core/middlewares";
 import { shutdown_handler } from "@lib/shutdown";
 import { configManager } from "@config/index";
 
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 
 // Load environment variables first
 dotenv.config();

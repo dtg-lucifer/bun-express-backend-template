@@ -83,7 +83,6 @@ export function exportCredentialsToCSV(
     credentials: Array<{
         name: string;
         email: string;
-        role: string;
         password: string;
     }>,
     filePath: string,
@@ -92,11 +91,11 @@ export function exportCredentialsToCSV(
         log.info("Exporting user credentials to CSV...");
 
         // Create CSV header
-        const csvHeader = "Name,Email,Role,Password\n";
+        const csvHeader = "Name,Email,Password\n";
 
         // Create CSV rows
         const csvRows = credentials
-            .map((cred) => `"${cred.name}","${cred.email}","${cred.role}","${cred.password}"`)
+            .map((cred) => `"${cred.name}","${cred.email}","${cred.password}"`)
             .join("\n");
 
         // Write to file

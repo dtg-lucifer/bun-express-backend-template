@@ -1,18 +1,38 @@
+import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
 import { z } from "zod";
-
-const routeSchema = z.object({
-    enabled: z.boolean(),
-    path: z.string().trim().min(1),
-});
 
 const documentationSchema = z.object({
     swagger: z.object({
         enabled: z.boolean(),
         path: z.string().trim().min(1),
         openapi_file: z.string().trim().min(1),
+    }),
+});
+
+const realtimeSchema = z.object({
+    socketio: z.object({
+        enabled: z.boolean(),
+        path: z.string().trim().min(1),
+    }),
+});
+
+const queueSchema = z.object({
+    bullmq: z.object({
+        enabled: z.boolean(),
+        default_attempts: z.number().int().positive(),
+        default_backoff_ms: z.number().int().positive(),
+    }),
+});
+
+const workersSchema = z.object({
+    process: z.object({
+        enabled: z.boolean(),
+    }),
+    notification_jobs: z.object({
+        enabled: z.boolean(),
     }),
 });
 
@@ -42,6 +62,7 @@ const appConfigSchema = z.object({
     database: z.object({
         pool_size: z.number().int().positive(),
         connection_timeout: z.number().int().nonnegative(),
+        idle_timeout: z.number().int().nonnegative(),
     }),
     logging: z.object({
         level: z.enum(["error", "warn", "info", "debug"]),
@@ -67,24 +88,17 @@ const appConfigSchema = z.object({
             enabled: z.boolean(),
         }),
     }),
-    routes: z.object({
-        health: routeSchema,
-        auth: routeSchema,
-    }),
     documentation: documentationSchema,
-    rbac: z
-        .object({
-            enabled: z.boolean(),
-            roles: z.array(z.string().trim().min(1)).min(1),
-            permissions: z.record(z.string(), z.array(z.string().trim().min(1))),
-        })
-        .optional(),
+    realtime: realtimeSchema,
+    queues: queueSchema,
+    workers: workersSchema,
 });
 
 const envSchema = z.object({
     DATABASE_URL: z.string().trim().min(1),
     JWT_SECRET: z.string().trim().min(1),
     JWT_REFRESH_SECRET: z.string().trim().min(1),
+    REDIS_URL: z.string().trim().min(1).optional(),
 });
 
 export type AppConfig = z.infer<typeof appConfigSchema>;
@@ -93,9 +107,10 @@ export type SecurityConfig = AppConfig["security"];
 export type DatabaseConfig = AppConfig["database"];
 export type LoggingConfig = AppConfig["logging"];
 export type MiddlewareConfig = AppConfig["middlewares"];
-export type RouteConfig = AppConfig["routes"];
 export type DocumentationConfig = AppConfig["documentation"];
-export type RbacConfig = NonNullable<AppConfig["rbac"]>;
+export type RealtimeConfig = AppConfig["realtime"];
+export type QueueConfig = AppConfig["queues"];
+export type WorkersConfig = AppConfig["workers"];
 
 class ConfigManager {
     private readonly configPath: string;
@@ -181,22 +196,20 @@ class ConfigManager {
         return this.config.middlewares;
     }
 
-    public getRoutesConfig(): RouteConfig {
-        return this.config.routes;
-    }
-
     public getDocumentationConfig(): DocumentationConfig {
         return this.config.documentation;
     }
 
-    public getRbacConfig(): RbacConfig | undefined {
-        return this.config.rbac;
+    public getRealtimeConfig(): RealtimeConfig {
+        return this.config.realtime;
     }
 
-    public getEnabledRoutes(): Array<{ name: string; path: string }> {
-        return Object.entries(this.config.routes)
-            .filter(([, route]) => route.enabled)
-            .map(([name, route]) => ({ name, path: route.path }));
+    public getQueueConfig(): QueueConfig {
+        return this.config.queues;
+    }
+
+    public getWorkersConfig(): WorkersConfig {
+        return this.config.workers;
     }
 
     public getListenAddress(): string {
@@ -217,9 +230,9 @@ export const getSecurityConfig = () => configManager.getSecurityConfig();
 export const getDatabaseConfig = () => configManager.getDatabaseConfig();
 export const getLoggingConfig = () => configManager.getLoggingConfig();
 export const getMiddlewareConfig = () => configManager.getMiddlewareConfig();
-export const getRoutesConfig = () => configManager.getRoutesConfig();
 export const getDocumentationConfig = () => configManager.getDocumentationConfig();
-export const getRbacConfig = () => configManager.getRbacConfig();
-export const getEnabledRoutes = () => configManager.getEnabledRoutes();
+export const getRealtimeConfig = () => configManager.getRealtimeConfig();
+export const getQueueConfig = () => configManager.getQueueConfig();
+export const getWorkersConfig = () => configManager.getWorkersConfig();
 export const getListenAddress = () => configManager.getListenAddress();
 export const isProduction = () => configManager.isProduction();

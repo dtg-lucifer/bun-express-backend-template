@@ -3,14 +3,133 @@
     "files": {
         "includes": ["src/**/*", "tests/**/*", "**/*.json", "**/*.ts"]
     },
+    "javascript": {
+        "globals": ["Bun"]
+    },
     "formatter": {
         "indentStyle": "space",
         "indentWidth": 4,
         "lineWidth": 100
     },
     "linter": {
+        "enabled": true,
+        "domains": {
+            "types": "recommended",
+            "project": "recommended"
+        },
         "rules": {
-            "recommended": true
+            "recommended": true,
+            "a11y": "off",
+            "complexity": {
+                "recommended": true,
+                "noExcessiveCognitiveComplexity": {
+                    "level": "warn",
+                    "options": {
+                        "maxAllowedComplexity": 20
+                    }
+                },
+                "noForEach": "warn",
+                "noUselessCatch": "error",
+                "useDateNow": "warn",
+                "useMaxParams": {
+                    "level": "warn",
+                    "options": {
+                        "max": 5
+                    }
+                },
+                "useOptionalChain": "warn",
+                "useSimplifiedLogicExpression": "warn"
+            },
+            "correctness": {
+                "recommended": true,
+                "noUndeclaredDependencies": "off",
+                "noUndeclaredVariables": "error",
+                "noUnresolvedImports": "error",
+                "noUnusedFunctionParameters": {
+                    "level": "warn",
+                    "options": {
+                        "ignoreRestSiblings": true
+                    }
+                },
+                "noUnusedImports": "error",
+                "noUnusedVariables": {
+                    "level": "warn",
+                    "options": {
+                        "ignoreRestSiblings": true
+                    }
+                }
+            },
+            "nursery": {
+                "recommended": true,
+                "noFloatingPromises": "error",
+                "noMisusedPromises": "error",
+                "useNullishCoalescing": {
+                    "level": "warn",
+                    "options": {
+                        "ignoreConditionalTests": true
+                    }
+                },
+                "useAwaitThenable": "error",
+                "useErrorCause": "warn"
+            },
+            "performance": {
+                "recommended": true,
+                "noAccumulatingSpread": "warn",
+                "noAwaitInLoops": "warn",
+                "noDelete": "warn",
+                "noReExportAll": "warn",
+                "useTopLevelRegex": "warn"
+            },
+            "security": {
+                "recommended": true,
+                "noGlobalEval": "error",
+                "noSecrets": {
+                    "level": "error",
+                    "options": {
+                        "entropyThreshold": 41
+                    }
+                }
+            },
+            "style": {
+                "recommended": true,
+                "noCommonJs": "error",
+                "useExportType": "warn",
+                "useImportType": "warn",
+                "useNodeAssertStrict": "warn",
+                "useNodejsImportProtocol": "error"
+            },
+            "suspicious": {
+                "recommended": true,
+                "noConsole": {
+                    "level": "warn",
+                    "options": {
+                        "allow": ["info", "warn", "error"]
+                    }
+                },
+                "noDoubleEquals": {
+                    "level": "error",
+                    "options": {
+                        "ignoreNull": true
+                    }
+                },
+                "noExplicitAny": "warn",
+                "noTsIgnore": "error"
+            }
         }
-    }
+    },
+    "overrides": [
+        {
+            "includes": ["tests/**/*", "**/*.test.ts", "**/*.spec.ts"],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noConsole": "off"
+                    },
+                    "style": {
+                        "noCommonJs": "off"
+                    }
+                }
+            }
+        }
+    ]
 }

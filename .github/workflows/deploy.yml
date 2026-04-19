@@ -1,0 +1,71 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "dist/,package.json,pnpm-lock.yaml,src/db/migrations/,ecosystem.config.json"
+          target: ${{ secrets.APP_DIR }}
+
+      - name: Restart app via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            source /root/.bashrc
+            set -e
+            cd ${{ secrets.APP_DIR }}
+
+            echo ">>> Installing dependencies..."
+            pnpm install --prod --frozen-lockfile
+
+            echo ">>> Running database migrations..."
+            pnpm db:migrate
+
+            echo ">>> Restarting app with PM2..."
+            pm2 reload ecosystem.config.json --env production || pm2 start ecosystem.config.json --env production
+
+            echo ">>> Saving PM2 process list..."
+            pm2 save
+
+            echo ">>> Deploy complete!"

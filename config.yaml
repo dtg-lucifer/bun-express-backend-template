@@ -22,6 +22,7 @@ security:
 database:
     pool_size: 10
     connection_timeout: 10000
+    idle_timeout: 30000
 
 logging:
     level: info
@@ -48,28 +49,25 @@ middlewares:
         max_requests: 5
         skip_localhost: true
 
-routes:
-    health:
-        enabled: true
-        path: /
-    auth:
-        enabled: true
-        path: /auth
-
 documentation:
     swagger:
         enabled: true
         path: /docs
         openapi_file: openapi.yaml
 
-rbac:
-    enabled: true
-    roles:
-        - admin
-        - user
-    permissions:
-        admin:
-            - MANAGE_USERS
-            - VIEW_AUDIT_LOGS
-        user:
-            - READ_SELF
+realtime:
+    socketio:
+        enabled: true
+        path: /ws
+
+queues:
+    bullmq:
+        enabled: true
+        default_attempts: 3
+        default_backoff_ms: 1000
+
+workers:
+    process:
+        enabled: false
+    notification_jobs:
+        enabled: false

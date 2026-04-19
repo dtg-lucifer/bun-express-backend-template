@@ -1,5 +1,5 @@
-import winston from "winston";
 import morgan from "morgan";
+import winston from "winston";
 import { configManager } from "../../config";
 
 const levels = {

@@ -1,7 +1,7 @@
-import { Server, type ServerCfg } from "@core/server";
-import { log } from "@core/middlewares";
-import { shutdown_handler } from "@lib/shutdown";
 import { configManager } from "@config/index";
+import { log } from "@core/middlewares";
+import { Server, type ServerCfg } from "@core/server";
+import { shutdown_handler } from "@lib/shutdown";
 
 import * as dotenv from "dotenv";
 

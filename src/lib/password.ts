@@ -17,7 +17,7 @@ export const compareHashedPassword = async (
     hashedPassword: string,
 ): Promise<boolean> => {
     const [storedIterations, salt, storedHash] = hashedPassword.split(":");
-    if (!storedIterations || !salt || !storedHash) {
+    if (!(storedIterations && salt && storedHash)) {
         return false;
     }
 

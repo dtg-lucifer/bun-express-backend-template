@@ -1,61 +1,65 @@
-import { type Request, type Response, Router } from "express";
-import { api_response } from "../utils/api_response";
-import { formatUptime } from "../utils/time";
+import { type NextFunction, type Request, type Response, Router } from "express";
+import { asyncHandler } from "../middlewares";
+import { api_response } from "../utils/api_response.js";
+import { formatUptime } from "../utils/time.js";
 
 const healthcheck_router = Router();
 
-healthcheck_router.get("/healthcheck", async (_req: Request, res: Response) => {
-    const requestStartTime = Date.now();
+healthcheck_router.get(
+    "/healthcheck",
+    asyncHandler(async (_req: Request, res: Response, _next: NextFunction): Promise<void> => {
+        const requestStartTime = Date.now();
 
-    try {
-        const { db } = res.locals;
+        try {
+            const { db } = res.locals;
 
-        const metrics: Record<string, unknown> = {
-            status: "healthy",
-            timestamp: new Date().toISOString(),
-            environment: Bun.env.NODE_ENV || "development",
-        };
+            const metrics: Record<string, unknown> = {
+                status: "healthy",
+                timestamp: new Date().toISOString(),
+                environment: Bun.env.NODE_ENV || "development",
+            };
 
-        const pings: Record<string, number | string> = {};
+            const pings: Record<string, number | string> = {};
 
-        if (db) {
-            try {
-                const dbStart = Date.now();
-                await db.query("SELECT 1");
-                pings.database = Date.now() - dbStart;
-            } catch (_dbError) {
-                pings.database = "error";
+            if (db) {
+                try {
+                    const dbStart = Date.now();
+                    await db.query("SELECT 1");
+                    pings.database = Date.now() - dbStart;
+                } catch (_dbError) {
+                    pings.database = "error";
+                }
             }
+
+            const uptimeMs = process.uptime() * 1000;
+            metrics.uptime = {
+                milliseconds: Math.floor(uptimeMs),
+                formatted: formatUptime(uptimeMs),
+                startedAt: new Date(Date.now() - uptimeMs).toISOString(),
+            };
+            metrics.memory = {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+                unit: "MB",
+            };
+            metrics.services = {
+                database: pings.database !== "error" ? "connected" : "error",
+            };
+            metrics.ping = {
+                database: pings.database ?? "unknown",
+                unit: "ms",
+            };
+
+            const serverResponseTime = Date.now() - requestStartTime;
+            (metrics.ping as Record<string, number | string>).server = serverResponseTime;
+
+            const response = api_response.success("Server is up and running!!", metrics, 200, res);
+            res.status(200).json(response);
+        } catch (_error) {
+            const response = api_response.error("Health check failed", 500, undefined, res);
+            res.status(500).json(response);
         }
-
-        const uptimeMs = process.uptime() * 1000;
-        metrics.uptime = {
-            milliseconds: Math.floor(uptimeMs),
-            formatted: formatUptime(uptimeMs),
-            startedAt: new Date(Date.now() - uptimeMs).toISOString(),
-        };
-        metrics.memory = {
-            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-            unit: "MB",
-        };
-        metrics.services = {
-            database: pings.database !== "error" ? "connected" : "error",
-        };
-        metrics.ping = {
-            database: pings.database ?? "unknown",
-            unit: "ms",
-        };
-
-        const serverResponseTime = Date.now() - requestStartTime;
-        (metrics.ping as Record<string, number | string>).server = serverResponseTime;
-
-        const response = api_response.success("Server is up and running!!", metrics, 200, res);
-        res.status(200).json(response);
-    } catch (_error) {
-        const response = api_response.error("Health check failed", 500, undefined, res);
-        res.status(500).json(response);
-    }
-});
+    }),
+);
 
 export { healthcheck_router };

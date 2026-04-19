@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import * as jwt from "jsonwebtoken";
-import { log } from "./logger";
 import { api_response } from "../utils/api_response";
+import { log } from "./logger";
 
 export interface AuthRequest extends Request {
     user?: {

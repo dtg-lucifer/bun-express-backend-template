@@ -8,7 +8,7 @@ import {
     generateToken,
 } from "~/core/middlewares";
 import { api_response } from "~/core/utils/api_response.js";
-import { login_schema, register_schema } from "./auth.dto";
+import { login_schema, register_schema } from "./auth.schema";
 import { AuthService } from "./auth.service";
 
 export const createAuthRouter = (dependencies: AppDependencies) => {

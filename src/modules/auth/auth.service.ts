@@ -2,7 +2,7 @@ import type { Pool } from "pg";
 import type { DomainEventBus } from "~/core/events";
 import { createAuthQueries } from "~/db/queries";
 import { compareHashedPassword, hashPassword } from "~/lib/password";
-import type { LoginInput, RegisterInput } from "./auth.dto";
+import type { LoginInput, RegisterInput } from "./auth.schema";
 
 export class AuthService {
     private readonly authQueries: ReturnType<typeof createAuthQueries>;

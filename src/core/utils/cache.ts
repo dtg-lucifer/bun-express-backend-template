@@ -3,7 +3,7 @@
  * @maintainer dtg-lucifer <dev.bosepiush@gmail.com>
  */
 
-import { log } from "../middlewares/logger";
+import { log } from "../middlewares/logger.middleware";
 
 /**
  * This is a single-use cache implementation for storing temporary data needed during a request-response cycle

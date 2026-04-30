@@ -25,7 +25,7 @@ database:
     idle_timeout: 30000
 
 logging:
-    level: info
+    level: http
     format: simple
     enable_colors: true
     log_requests: true

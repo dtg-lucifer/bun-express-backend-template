@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-export { debug, error, info, log, warn, winston_logger } from "./logger";
+export { debug, error, info, log, warn, winston_logger } from "./logger.middleware";
 
 export function asyncHandler<TRequest extends Request = Request>(
     fn: (req: TRequest, res: Response, next: NextFunction) => Promise<void>,
@@ -10,7 +10,8 @@ export function asyncHandler<TRequest extends Request = Request>(
     };
 }
 
-export { audit_logger } from "./audit";
+export { audit_logger } from "./audit.middleware";
+export { validate } from "./validation.middleware";
 export {
     type AuthRequest,
     authenticate,
@@ -19,9 +20,9 @@ export {
     optionalAuth,
     verifyRefreshToken,
     verifyToken,
-} from "./jwt";
+} from "./jwt.middleware";
 export {
     type AppDependencies,
     createDependencyInjectionMiddleware,
-} from "./locals";
-export { requestid_middleware } from "./request_id";
+} from "./locals.middleware";
+export { requestid_middleware } from "./request_id.middleware";

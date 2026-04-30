@@ -1,12 +1,12 @@
 import { type NextFunction, type Request, type Response, Router } from "express";
-import { asyncHandler } from "../middlewares";
-import { api_response } from "../utils/api_response.js";
-import { formatUptime } from "../utils/time.js";
+import { asyncHandler } from "../../core/middlewares";
+import { api_response, sendResponse } from "../../core/utils/api_response.js";
+import { formatUptime } from "../../core/utils/time.js";
 
 const healthcheck_router = Router();
 
 healthcheck_router.get(
-    "/healthcheck",
+    "/",
     asyncHandler(async (_req: Request, res: Response, _next: NextFunction): Promise<void> => {
         const requestStartTime = Date.now();
 
@@ -53,11 +53,11 @@ healthcheck_router.get(
             const serverResponseTime = Date.now() - requestStartTime;
             (metrics.ping as Record<string, number | string>).server = serverResponseTime;
 
-            const response = api_response.success("Server is up and running!!", metrics, 200, res);
-            res.status(200).json(response);
+            const response = api_response.success("Server is up and running!!", metrics, 200);
+            sendResponse(res, response);
         } catch (_error) {
-            const response = api_response.error("Health check failed", 500, undefined, res);
-            res.status(500).json(response);
+            const response = api_response.error("Health check failed", 500);
+            sendResponse(res, response);
         }
     }),
 );

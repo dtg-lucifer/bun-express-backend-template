@@ -13,7 +13,7 @@ import { type AppConfig, configManager } from "~/config/index";
 import { createDomainEventBus, type DomainEventBus } from "~/core/events";
 import { closeQueueResources } from "~/core/queues";
 import { setupSocketServer } from "~/core/realtime";
-import { registerHttpRoutes } from "~/core/routes";
+import { registerHttpRoutes } from "~/modules";
 import { registerAuthEventHandlers } from "~/modules/auth/auth.events";
 import {
     type AppDependencies,
@@ -142,7 +142,7 @@ export class Server {
         const dependencies = this.getDependencies();
         registerHttpRoutes(this.app, this.config.api_prefix, dependencies);
         log.info(
-            `[ROUTES] Mounted under ${this.config.api_prefix} (edit src/core/routes/index.ts to change)`,
+            `[ROUTES] Mounted under ${this.config.api_prefix} (edit src/modules/index.ts to change)`,
         );
     }
 

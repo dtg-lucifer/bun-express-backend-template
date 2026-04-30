@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Pool } from "pg";
-import type { AuthRequest } from "./jwt";
-import { log } from "./logger";
+import type { AuthRequest } from "./jwt.middleware";
+import { log } from "./logger.middleware";
 
 export const audit_logger = (db: Pool) => {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -11,7 +11,7 @@ export const audit_logger = (db: Pool) => {
             const authReq = req as AuthRequest;
             const actor = authReq.user;
 
-            if (!actor || req.path.includes("/healthcheck")) {
+            if (!actor || req.path.includes("/health")) {
                 return;
             }
 

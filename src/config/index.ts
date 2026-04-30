@@ -65,7 +65,7 @@ const appConfigSchema = z.object({
         idle_timeout: z.number().int().nonnegative(),
     }),
     logging: z.object({
-        level: z.enum(["error", "warn", "info", "debug"]),
+        level: z.enum(["error", "warn", "info", "http", "debug"]),
         format: z.enum(["json", "simple"]),
         enable_colors: z.boolean(),
         log_requests: z.boolean(),

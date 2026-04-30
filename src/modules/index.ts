@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import type { AppDependencies } from "~/core/middlewares";
-import { createAuthRouter } from "~/modules/auth/auth.handler";
-import { healthcheck_router } from "./health";
+import { createAuthRouter } from "~/modules/auth/auth.routes";
+import { healthcheck_router } from "~/modules/health/health";
 
 /**
  * Mount HTTP routes for this application. Paths are fixed here; add or remove
@@ -12,6 +12,6 @@ export function registerHttpRoutes(
     apiPrefix: string,
     dependencies: AppDependencies,
 ): void {
-    app.use(`${apiPrefix}/`, healthcheck_router);
+    app.use(`${apiPrefix}/health`, healthcheck_router);
     app.use(`${apiPrefix}/auth`, createAuthRouter(dependencies));
 }

@@ -36,75 +36,47 @@ interface ApiResponseBase {
     requestId?: string;
 }
 
-interface ApiSuccessResponse<T> extends ApiResponseBase {
+export interface ApiSuccessResponse<T = unknown> extends ApiResponseBase {
     success: true;
     data?: T;
 }
 
-interface ApiErrorResponse extends ApiResponseBase {
+export interface ApiErrorResponse extends ApiResponseBase {
     success: false;
     errors?: unknown;
 }
 
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
+
 /**
  * Standardized API Response Helper
  *
- * Automatically includes X-Request-ID from res.locals if Response object is provided
+ * Services use these to build responses without access to `res`.
+ * Call `sendResponse(res, response)` in route handlers to send them.
  */
 export const api_response = {
-    /**
-     * Success response
-     * @param message - Success message
-     * @param data - Response data (optional)
-     * @param statusCode - HTTP status code (default: 200)
-     * @param res - Express Response object (optional, for auto-injecting requestId)
-     */
-    success: <T>(
-        message: string,
-        data?: T,
-        statusCode: number = 200,
-        res?: Response,
-    ): ApiSuccessResponse<T> => {
-        const response: ApiSuccessResponse<T> = {
-            success: true,
-            message,
-            data,
-            statusCode,
-        };
+    success: <T>(message: string, data?: T, statusCode: number = 200): ApiSuccessResponse<T> => ({
+        success: true,
+        message,
+        data,
+        statusCode,
+    }),
 
-        // Automatically inject requestId if res is provided
-        if (res?.locals?.requestId) {
-            response.requestId = res.locals.requestId;
-        }
-
-        return response;
-    },
-
-    /**
-     * Error response
-     * @param message - Error message
-     * @param statusCode - HTTP status code (default: 500)
-     * @param errors - Additional error details (optional)
-     * @param res - Express Response object (optional, for auto-injecting requestId)
-     */
-    error: (
-        message: string,
-        statusCode: number = 500,
-        errors?: unknown,
-        res?: Response,
-    ): ApiErrorResponse => {
-        const response: ApiErrorResponse = {
-            success: false,
-            message,
-            errors,
-            statusCode,
-        };
-
-        // Automatically inject requestId if res is provided
-        if (res?.locals?.requestId) {
-            response.requestId = res.locals.requestId;
-        }
-
-        return response;
-    },
+    error: (message: string, statusCode: number = 500, errors?: unknown): ApiErrorResponse => ({
+        success: false,
+        message,
+        errors,
+        statusCode,
+    }),
 };
+
+/**
+ * Sends an ApiResponse, automatically injecting requestId from res.locals.
+ * Use this in route handlers instead of manually calling res.json().
+ */
+export function sendResponse<T>(res: Response, response: ApiResponse<T>): void {
+    if (res.locals?.requestId) {
+        response.requestId = res.locals.requestId;
+    }
+    res.status(response.statusCode).json(response);
+}

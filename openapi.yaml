@@ -135,9 +135,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Models.RegisterRequest'
-  /healthcheck:
+  /health:
     get:
-      operationId: Health_healthcheck
+      operationId: Health_health
       summary: Health check
       parameters: []
       responses:

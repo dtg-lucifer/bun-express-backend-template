@@ -1,4 +1,4 @@
-import { log } from "../middlewares/logger";
+import { log } from "../middlewares/logger.middleware";
 
 export interface EmailPayload {
     to: string;

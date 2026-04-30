@@ -21,6 +21,12 @@
       "sourceType": "github",
       "computedHash": "d27174128aebe583d5ca15747389c84e286daed589bfa2b99847392a012719b5"
     },
+    "typespec-api-operations": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/typespec-api-operations/SKILL.md",
+      "computedHash": "55f60154f528041437b53a1b4bb227b584f2b6accc1b85b625b78e07542cb9cd"
+    },
     "websocket-engineer": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",

@@ -6,10 +6,10 @@ using BackendTemplate.Models;
 
 namespace BackendTemplate.Routes;
 
-@route("/healthcheck")
+@route("/health")
 @tag("Health")
 interface Health {
   @get
   @summary("Health check")
-  healthcheck(): ApiResponse<HealthMetrics> | ApiErrorResponse;
+  health(): ApiResponse<HealthMetrics> | ApiErrorResponse;
 }

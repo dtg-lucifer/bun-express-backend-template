@@ -30,25 +30,25 @@ This document explains every module, component, and subsystem in this template �
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                          CLIENT                                  │
-│              (HTTP REST  /  WebSocket)                           │
+│                          CLIENT                                 │
+│              (HTTP REST  /  WebSocket)                          │
 └────────────────────┬──────────────────┬─────────────────────────┘
                      │ HTTP             │ WS upgrade
                      ▼                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Node HTTP Server                             │
+│                     Node HTTP Server                            │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │                   Express App                            │   │
 │  │  Middleware stack (helmet, cors, rate-limit, morgan,     │   │
 │  │  request-id, body-parser, DI, audit)                     │   │
 │  │                                                          │   │
-│  │  ┌─────────────┐   ┌──────────────┐   ┌─────────────┐   │   │
-│  │  │ /health     │   │ /auth        │   │ /...        │   │   │
-│  │  │ routes      │   │ routes       │   │ (future)    │   │   │
-│  │  └─────────────┘   └──────┬───────┘   └─────────────┘   │   │
-│  └─────────────────────────── │ ────────────────────────────┘   │
-│                                │                                 │
-│  ┌─────────────────────────────▼──────────────────────────────┐ │
+│  │  ┌─────────────┐   ┌──────────────┐   ┌─────────────┐    │   │
+│  │  │ /health     │   │ /auth        │   │ /...        │    │   │
+│  │  │ routes      │   │ routes       │   │ (future)    │    │   │
+│  │  └─────────────┘   └──────┬───────┘   └─────────────┘    │   │
+│  └────────────────────────── │ ─────────────────────────────┘   │
+│                              │                                  │
+│  ┌───────────────────────────▼────────────────────────────────┐ │
 │  │              Socket.IO Server (same HTTP server)           │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └──────────┬──────────────────────────────────────────────────────┘
@@ -56,27 +56,27 @@ This document explains every module, component, and subsystem in this template �
            │  service calls
            ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                     Business Layer                                │
-│                                                                   │
+│                     Business Layer                               │
+│                                                                  │
 │   AuthService  ──► DB Queries (pg Pool)  ──► PostgreSQL          │
-│        │                                                          │
+│        │                                                         │
 │        └──► DomainEventBus.emit("auth.user.registered")          │
-│                        │                                          │
-│                        ▼                                          │
-│              Auth Event Handler                                   │
-│                        │                                          │
-│                        ▼                                          │
+│                        │                                         │
+│                        ▼                                         │
+│              Auth Event Handler                                  │
+│                        │                                         │
+│                        ▼                                         │
 │              BullMQ Queue (ioredis) ──► Redis                    │
-│                        │                                          │
+│                        │                                         │
 │                        └──► DomainEventBus.emit("queue.job.enqueued")
-│                                        │                          │
-│                                        ▼                          │
-│                              Socket.IO broadcast                  │
+│                                        │                         │
+│                                        ▼                         │
+│                              Socket.IO broadcast                 │
 └──────────────────────────────────────────────────────────────────┘
 
 Separate process:
 ┌──────────────────────────────────────────────────────────────────┐
-│                     BullMQ Worker (src/workers)                   │
+│                     BullMQ Worker (src/workers)                  │
 │   Pulls jobs from Redis ──► processEmailJob() ──► EmailService   │
 └──────────────────────────────────────────────────────────────────┘
 ```

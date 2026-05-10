@@ -1,29 +1,30 @@
 import type { Pool } from "pg";
 import type { DomainEventBus } from "~/core/events";
 import { type ApiResponse, api_response } from "~/core/utils/api_response";
-import { createAuthQueries } from "~/db/queries";
+import { createDebugProxy } from "~/core/utils/debug_proxy";
+import { AuthRepository } from "~/db/queries";
 import { compareHashedPassword, hashPassword } from "~/lib/password";
 import { generateRefreshToken, generateToken } from "~/core/middlewares";
 import type { LoginInput, RegisterInput } from "./auth.schema";
 
 export class AuthService {
-    private readonly authQueries: ReturnType<typeof createAuthQueries>;
+    private readonly repo: AuthRepository;
 
     constructor(
         db: Pool,
         private readonly eventBus: DomainEventBus,
     ) {
-        this.authQueries = createAuthQueries(db);
+        this.repo = new AuthRepository(db);
     }
 
     async register(input: RegisterInput): Promise<ApiResponse> {
-        const existing = await this.authQueries.findUserIdByEmail(input.email);
+        const existing = await this.repo.findUserIdByEmail(input.email);
         if (existing) {
             return api_response.error("Email already registered", 409);
         }
 
         const passwordHash = await hashPassword(input.password);
-        const user = await this.authQueries.insertUserWithAudit({
+        const user = await this.repo.insertUserWithAudit({
             email: input.email,
             passwordHash,
         });
@@ -37,7 +38,7 @@ export class AuthService {
     }
 
     async login(input: LoginInput): Promise<ApiResponse> {
-        const user = await this.authQueries.findUserForLogin(input.email);
+        const user = await this.repo.findUserForLogin(input.email);
 
         if (!user) {
             return api_response.error("Invalid email or password", 401);
@@ -60,12 +61,20 @@ export class AuthService {
     }
 
     async getCurrentUser(userId: string): Promise<ApiResponse> {
-        const user = await this.authQueries.getCurrentUser(userId);
+        const user = await this.repo.getCurrentUser(userId);
 
         if (!user) {
             return api_response.error("User not found", 404);
         }
 
         return api_response.success("Current user", { user }, 200);
+    }
+
+    /**
+     * Returns a debug-proxied instance of this service that logs every method
+     * call (args, duration, errors) via the project logger at `debug` level.
+     */
+    static withDebug(db: Pool, eventBus: DomainEventBus): AuthService {
+        return createDebugProxy(new AuthService(db, eventBus), "AuthService");
     }
 }

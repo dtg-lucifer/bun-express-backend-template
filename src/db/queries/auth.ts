@@ -25,9 +25,11 @@ interface RegisterUserInput {
     passwordHash: string;
 }
 
-export const createAuthQueries = (db: Pool) => {
-    const findUserIdByEmail = async (email: string): Promise<ExistingUser | null> => {
-        const result = await db.query<ExistingUser>(
+export class AuthRepository {
+    constructor(private readonly db: Pool) {}
+
+    async findUserIdByEmail(email: string): Promise<ExistingUser | null> {
+        const result = await this.db.query<ExistingUser>(
             `
             SELECT id
             FROM users
@@ -43,10 +45,10 @@ export const createAuthQueries = (db: Pool) => {
         }
 
         return ExistingUserSchema.parse(user);
-    };
+    }
 
-    const insertUserWithAudit = async (input: RegisterUserInput): Promise<CurrentUser> => {
-        const client = await db.connect();
+    async insertUserWithAudit(input: RegisterUserInput): Promise<CurrentUser> {
+        const client = await this.db.connect();
 
         try {
             await client.query("BEGIN");
@@ -82,10 +84,10 @@ export const createAuthQueries = (db: Pool) => {
         } finally {
             client.release();
         }
-    };
+    }
 
-    const findUserForLogin = async (email: string): Promise<LoginUser | null> => {
-        const result = await db.query<LoginUser>(
+    async findUserForLogin(email: string): Promise<LoginUser | null> {
+        const result = await this.db.query<LoginUser>(
             `
             SELECT id, email, password_hash
             FROM users
@@ -101,10 +103,10 @@ export const createAuthQueries = (db: Pool) => {
         }
 
         return LoginUserSchema.parse(user);
-    };
+    }
 
-    const getCurrentUser = async (userId: string): Promise<CurrentUser | null> => {
-        const result = await db.query<CurrentUser>(
+    async getCurrentUser(userId: string): Promise<CurrentUser | null> {
+        const result = await this.db.query<CurrentUser>(
             `
             SELECT id, email
             FROM users
@@ -120,12 +122,8 @@ export const createAuthQueries = (db: Pool) => {
         }
 
         return CurrentUserSchema.parse(user);
-    };
+    }
+}
 
-    return {
-        findUserForLogin,
-        findUserIdByEmail,
-        getCurrentUser,
-        insertUserWithAudit,
-    };
-};
+/** @deprecated Use `AuthRepository` class directly */
+export const createAuthQueries = (db: Pool) => new AuthRepository(db);

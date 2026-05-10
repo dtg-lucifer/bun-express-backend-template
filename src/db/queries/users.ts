@@ -9,9 +9,11 @@ const UserSchema = z.object({
 
 export type UserRecord = z.infer<typeof UserSchema>;
 
-export const createUserQueries = (db: Pool) => {
-    const getUserByEmail = async (email: string): Promise<UserRecord | null> => {
-        const result = await db.query<UserRecord>(
+export class UserRepository {
+    constructor(private readonly db: Pool) {}
+
+    async getUserByEmail(email: string): Promise<UserRecord | null> {
+        const result = await this.db.query<UserRecord>(
             `
             SELECT id, email, created_at
             FROM users
@@ -27,9 +29,8 @@ export const createUserQueries = (db: Pool) => {
         }
 
         return UserSchema.parse(user);
-    };
+    }
+}
 
-    return {
-        getUserByEmail,
-    };
-};
+/** @deprecated Use `UserRepository` class directly */
+export const createUserQueries = (db: Pool) => new UserRepository(db);

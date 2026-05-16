@@ -2,7 +2,7 @@
     "name": "backend-template-expressjs",
     "version": "1.0.0",
     "description": "Express.js backend template with TypeScript, Bun, Biome and TypeSpec documentation",
-    "main": "index.js",
+    "main": "src/index.ts",
     "scripts": {
         "dev": "bun run --watch src/index.ts",
         "build": "bun build src/index.ts src/workers/index.ts --outdir=./dist --minify --sourcemap=external --target=bun",
@@ -20,7 +20,7 @@
         "db:migrate:new": "node-pg-migrate create --migration-file-language=sql --migrations-dir=src/db/migrations"
     },
     "keywords": [],
-    "author": "",
+    "author": "Piush Bose <mail@piush.in>",
     "license": "ISC",
     "packageManager": "bun@1.2.22",
     "devDependencies": {

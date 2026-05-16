@@ -9,3 +9,7 @@ infra:
 
 docs:
 	bun run docs:build
+
+help:
+	@echo "Available targets:"
+	@awk -F: '/^[a-zA-Z0-9][a-zA-Z0-9_-]*:/ {print "  " $$1}' Makefile

@@ -1,10 +1,10 @@
 import type { Pool } from "pg";
 import type { DomainEventBus } from "~/core/events";
+import { generateRefreshToken, generateToken } from "~/core/middlewares";
 import { type ApiResponse, api_response } from "~/core/utils/api_response";
 import { createDebugProxy } from "~/core/utils/debug_proxy";
 import { AuthRepository } from "~/db/queries";
 import { compareHashedPassword, hashPassword } from "~/lib/password";
-import { generateRefreshToken, generateToken } from "~/core/middlewares";
 import type { LoginInput, RegisterInput } from "./auth.schema";
 
 export class AuthService {

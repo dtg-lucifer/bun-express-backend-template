@@ -11,7 +11,6 @@ export function asyncHandler<TRequest extends Request = Request>(
 }
 
 export { audit_logger } from "./audit.middleware";
-export { validate } from "./validation.middleware";
 export {
     type AuthRequest,
     authenticate,
@@ -26,3 +25,4 @@ export {
     createDependencyInjectionMiddleware,
 } from "./locals.middleware";
 export { requestid_middleware } from "./request_id.middleware";
+export { validate } from "./validation.middleware";

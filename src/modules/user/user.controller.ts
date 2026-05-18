@@ -1,5 +1,5 @@
-import { Router } from "express";
 import type { Request, Response } from "express";
+import { Router } from "express";
 import type { AppDependencies, AuthRequest } from "~/core/middlewares";
 import { asyncHandler, authenticate, validate } from "~/core/middlewares";
 import { sendResponse } from "~/core/utils/api_response";

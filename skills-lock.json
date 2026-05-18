@@ -1,36 +1,36 @@
 {
-  "version": 1,
-  "skills": {
-    "nodejs-backend-patterns": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "computedHash": "4c6bf8fbd9a13d61e326ddeb210af5854fea3b253922a7981bd7718f3b765c08"
-    },
-    "postgresql-optimization": {
-      "source": "github/awesome-copilot",
-      "sourceType": "github",
-      "computedHash": "8022448de70ba9a485e3b5bce34c5bbc644f93eb39b68431c9f7dabcf03aeb09"
-    },
-    "postgresql-table-design": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "computedHash": "dcace78e5cef7d8dce8ffef7ebee146e6c83a438aa4cf80bf502730e870c02d4"
-    },
-    "redis-development": {
-      "source": "redis/agent-skills",
-      "sourceType": "github",
-      "computedHash": "d27174128aebe583d5ca15747389c84e286daed589bfa2b99847392a012719b5"
-    },
-    "typespec-api-operations": {
-      "source": "github/awesome-copilot",
-      "sourceType": "github",
-      "skillPath": "skills/typespec-api-operations/SKILL.md",
-      "computedHash": "55f60154f528041437b53a1b4bb227b584f2b6accc1b85b625b78e07542cb9cd"
-    },
-    "websocket-engineer": {
-      "source": "jeffallan/claude-skills",
-      "sourceType": "github",
-      "computedHash": "a498a3fb8345b1edff9634de603ccc33aa58f98374870d8504b672384a28513d"
+    "version": 1,
+    "skills": {
+        "nodejs-backend-patterns": {
+            "source": "wshobson/agents",
+            "sourceType": "github",
+            "computedHash": "4c6bf8fbd9a13d61e326ddeb210af5854fea3b253922a7981bd7718f3b765c08"
+        },
+        "postgresql-optimization": {
+            "source": "github/awesome-copilot",
+            "sourceType": "github",
+            "computedHash": "8022448de70ba9a485e3b5bce34c5bbc644f93eb39b68431c9f7dabcf03aeb09"
+        },
+        "postgresql-table-design": {
+            "source": "wshobson/agents",
+            "sourceType": "github",
+            "computedHash": "dcace78e5cef7d8dce8ffef7ebee146e6c83a438aa4cf80bf502730e870c02d4"
+        },
+        "redis-development": {
+            "source": "redis/agent-skills",
+            "sourceType": "github",
+            "computedHash": "d27174128aebe583d5ca15747389c84e286daed589bfa2b99847392a012719b5"
+        },
+        "typespec-api-operations": {
+            "source": "github/awesome-copilot",
+            "sourceType": "github",
+            "skillPath": "skills/typespec-api-operations/SKILL.md",
+            "computedHash": "55f60154f528041437b53a1b4bb227b584f2b6accc1b85b625b78e07542cb9cd"
+        },
+        "websocket-engineer": {
+            "source": "jeffallan/claude-skills",
+            "sourceType": "github",
+            "computedHash": "a498a3fb8345b1edff9634de603ccc33aa58f98374870d8504b672384a28513d"
+        }
     }
-  }
 }

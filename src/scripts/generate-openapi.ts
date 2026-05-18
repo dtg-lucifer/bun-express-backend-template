@@ -8,6 +8,7 @@ import * as YAML from "yaml";
 
 // Import the registry setup first, then all module definitions
 import { generateOpenApiDocument } from "~/config/openapi";
+import { log } from "~/core/middlewares";
 import "~/modules/auth/auth.openapi";
 import "~/modules/health/health.openapi";
 
@@ -16,4 +17,4 @@ const yaml = YAML.stringify(doc);
 const outPath = path.join(process.cwd(), "openapi.yaml");
 
 fs.writeFileSync(outPath, yaml, "utf-8");
-console.log(`✓ openapi.yaml written to ${outPath}`);
+log.info(`✓ openapi.yaml written to ${outPath}`);

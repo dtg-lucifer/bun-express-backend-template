@@ -1,20 +1,23 @@
-import fs from "node:fs";
 import { createServer, type Server as HTTPServer } from "node:http";
-import path from "node:path";
+import { apiReference } from "@scalar/express-api-reference";
 import cors from "cors";
 import express, { type Express } from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { Pool } from "pg";
 import type { Server as SocketIOServer } from "socket.io";
-import * as swaggerui from "swagger-ui-express";
-import * as YAML from "yaml";
 import { type AppConfig, configManager } from "~/config/index";
+import { generateOpenApiDocument } from "~/config/openapi";
 import { createDomainEventBus, type DomainEventBus } from "~/core/events";
 import { closeQueueResources } from "~/core/queues";
 import { setupSocketServer } from "~/core/realtime";
 import { registerHttpRoutes } from "~/modules";
 import { registerAuthEventHandlers } from "~/modules/auth/auth.events";
+
+// Side-effect imports — register all route definitions into the OpenAPI registry
+import "~/modules/auth/auth.openapi";
+import "~/modules/health/health.openapi";
+
 import {
     type AppDependencies,
     audit_logger,
@@ -153,27 +156,21 @@ export class Server {
             return;
         }
 
-        const openapiPath = path.join(process.cwd(), docConfig.swagger.openapi_file);
-        if (!fs.existsSync(openapiPath)) {
-            log.warn(`[DOCS] OpenAPI file not found at ${openapiPath}`);
-            return;
-        }
-
         try {
-            const openapiFile = fs.readFileSync(openapiPath, "utf-8");
-            const openapiSpec = YAML.parse(openapiFile);
+            const openapiSpec = generateOpenApiDocument();
 
             this.app.use(
                 this.config.api_prefix + docConfig.swagger.path,
-                swaggerui.serve,
-                swaggerui.setup(openapiSpec),
+                apiReference({
+                    spec: { content: openapiSpec },
+                }),
             );
 
             log.info(
-                `[DOCS] Swagger UI: ${this.config.api_prefix}${docConfig.swagger.path} (source: ${docConfig.swagger.openapi_file})`,
+                `[DOCS] Scalar API Reference: ${this.config.api_prefix}${docConfig.swagger.path}`,
             );
         } catch (error) {
-            log.error("[DOCS] Failed to load OpenAPI spec", error);
+            log.error("[DOCS] Failed to generate OpenAPI spec", error);
         }
     }
 
@@ -203,8 +200,13 @@ export class Server {
                               directives: {
                                   defaultSrc: ["'self'"],
                                   styleSrc: ["'self'", "'unsafe-inline'"],
-                                  scriptSrc: ["'self'"],
+                                  scriptSrc: [
+                                      "'self'",
+                                      "'unsafe-inline'",
+                                      "https://cdn.jsdelivr.net",
+                                  ],
                                   imgSrc: ["'self'", "data:", "https:"],
+                                  workerSrc: ["'self'", "blob:"],
                               },
                           }
                         : false,

@@ -1,314 +1,363 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
+  version: 1.0.0
   title: Backend Template API
-  version: 0.0.0
-tags:
-  - name: Health
-  - name: Authentication
-paths:
-  /auth/login:
-    post:
-      operationId: Auth_login
-      summary: Login user
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - type: object
-                    required:
-                      - success
-                      - message
-                      - statusCode
-                    properties:
-                      success:
-                        type: boolean
-                      message:
-                        type: string
-                      data:
-                        type: object
-                        properties:
-                          user:
-                            $ref: '#/components/schemas/Models.User'
-                          accessToken:
-                            type: string
-                          refreshToken:
-                            type: string
-                        required:
-                          - user
-                          - accessToken
-                          - refreshToken
-                      statusCode:
-                        type: integer
-                        format: int32
-                      requestId:
-                        type: string
-                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
-      tags:
-        - Authentication
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Models.LoginRequest'
-  /auth/me:
-    get:
-      operationId: Auth_me
-      summary: Get current user
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - type: object
-                    required:
-                      - success
-                      - message
-                      - statusCode
-                    properties:
-                      success:
-                        type: boolean
-                      message:
-                        type: string
-                      data:
-                        type: object
-                        properties:
-                          user:
-                            $ref: '#/components/schemas/Models.User'
-                        required:
-                          - user
-                      statusCode:
-                        type: integer
-                        format: int32
-                      requestId:
-                        type: string
-                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
-      tags:
-        - Authentication
-  /auth/register:
-    post:
-      operationId: Auth_register
-      summary: Register user
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - type: object
-                    required:
-                      - success
-                      - message
-                      - statusCode
-                    properties:
-                      success:
-                        type: boolean
-                      message:
-                        type: string
-                      data:
-                        type: object
-                        properties:
-                          user:
-                            $ref: '#/components/schemas/Models.User'
-                        required:
-                          - user
-                      statusCode:
-                        type: integer
-                        format: int32
-                      requestId:
-                        type: string
-                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
-      tags:
-        - Authentication
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Models.RegisterRequest'
-  /health:
-    get:
-      operationId: Health_health
-      summary: Health check
-      parameters: []
-      responses:
-        '200':
-          description: The request has succeeded.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - type: object
-                    required:
-                      - success
-                      - message
-                      - statusCode
-                    properties:
-                      success:
-                        type: boolean
-                      message:
-                        type: string
-                      data:
-                        $ref: '#/components/schemas/Models.HealthMetrics'
-                      statusCode:
-                        type: integer
-                        format: int32
-                      requestId:
-                        type: string
-                  - $ref: '#/components/schemas/Models.ApiErrorResponse'
-      tags:
-        - Health
+  description: Express + TypeScript backend API documentation
+servers:
+  - url: /api/v1
+    description: API server
+security:
+  - BearerAuth: []
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
-    Models.ApiErrorResponse:
+    User:
       type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        email:
+          type: string
+          format: email
+          example: user@example.com
+      required:
+        - id
+        - email
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Error message
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        statusCode:
+          type: number
+          example: 400
+        requestId:
+          type: string
+          example: req-uuid
       required:
         - success
         - message
         - statusCode
-      properties:
-        success:
-          type: boolean
-          enum:
-            - false
-        message:
-          type: string
-        errors: {}
-        statusCode:
-          type: integer
-          format: int32
-        requestId:
-          type: string
-    Models.AuthTokens:
-      type: object
-      required:
-        - accessToken
-        - refreshToken
-      properties:
-        accessToken:
-          type: string
-        refreshToken:
-          type: string
-    Models.HealthMetrics:
-      type: object
-      required:
-        - status
-        - timestamp
-        - environment
-      properties:
-        status:
-          type: string
-          enum:
-            - healthy
-            - unhealthy
-        timestamp:
-          type: string
-        environment:
-          type: string
-        uptime:
-          type: object
-          properties:
-            milliseconds:
-              type: integer
-              format: int64
-            formatted:
-              type: string
-            startedAt:
-              type: string
-          required:
-            - milliseconds
-            - formatted
-            - startedAt
-        memory:
-          type: object
-          properties:
-            used:
-              type: integer
-              format: int32
-            total:
-              type: integer
-              format: int32
-            unit:
-              type: string
-              enum:
-                - MB
-          required:
-            - used
-            - total
-            - unit
-        services:
-          type: object
-          properties:
-            database:
-              type: string
-              enum:
-                - connected
-                - error
-                - unknown
-          required:
-            - database
-        ping:
-          type: object
-          properties:
-            database:
-              anyOf:
-                - type: integer
-                  format: int32
-                - type: string
-                  enum:
-                    - error
-                    - unknown
-            server:
-              type: integer
-              format: int32
-            unit:
-              type: string
-              enum:
-                - ms
-          required:
-            - database
-            - server
-            - unit
-    Models.LoginRequest:
-      type: object
-      required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-        password:
-          type: string
-    Models.RegisterRequest:
-      type: object
-      required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-        password:
-          type: string
-    Models.User:
-      type: object
-      required:
-        - id
-        - email
-      properties:
-        id:
-          type: string
-        email:
-          type: string
-servers:
-  - url: http://localhost:8989/api/v1
-    description: Development server
-    variables: {}
+  parameters: {}
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: password123
+              required:
+                - email
+                - password
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User registered
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+                    required:
+                      - user
+                  statusCode:
+                    type: number
+                    example: 201
+                required:
+                  - success
+                  - message
+                  - data
+                  - statusCode
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login with email and password
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 1
+                  example: password123
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Login successful
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+                      accessToken:
+                        type: string
+                        example: eyJhbGci...
+                      refreshToken:
+                        type: string
+                        example: eyJhbGci...
+                    required:
+                      - user
+                      - accessToken
+                      - refreshToken
+                  statusCode:
+                    type: number
+                    example: 200
+                required:
+                  - success
+                  - message
+                  - data
+                  - statusCode
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get the currently authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Current user
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+                    required:
+                      - user
+                  statusCode:
+                    type: number
+                    example: 200
+                required:
+                  - success
+                  - message
+                  - data
+                  - statusCode
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check — returns server status and metrics
+      security: []
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Server is up and running!!
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: healthy
+                      timestamp:
+                        type: string
+                        example: 2026-05-18T10:00:00.000Z
+                      environment:
+                        type: string
+                        example: development
+                      uptime:
+                        type: object
+                        properties:
+                          milliseconds:
+                            type: number
+                            example: 123456
+                          formatted:
+                            type: string
+                            example: 2m 3s
+                          startedAt:
+                            type: string
+                            example: 2026-05-18T09:57:57.000Z
+                        required:
+                          - milliseconds
+                          - formatted
+                          - startedAt
+                      memory:
+                        type: object
+                        properties:
+                          used:
+                            type: number
+                            example: 42
+                          total:
+                            type: number
+                            example: 128
+                          unit:
+                            type: string
+                            enum:
+                              - MB
+                        required:
+                          - used
+                          - total
+                          - unit
+                      services:
+                        type: object
+                        properties:
+                          database:
+                            type: string
+                            enum:
+                              - connected
+                              - error
+                            example: connected
+                        required:
+                          - database
+                      ping:
+                        type: object
+                        properties:
+                          database:
+                            anyOf:
+                              - type: number
+                              - type: string
+                                enum:
+                                  - error
+                            example: 3
+                          server:
+                            type: number
+                            example: 1
+                          unit:
+                            type: string
+                            enum:
+                              - ms
+                        required:
+                          - database
+                          - server
+                          - unit
+                    required:
+                      - status
+                      - timestamp
+                      - environment
+                      - uptime
+                      - memory
+                      - services
+                      - ping
+                  statusCode:
+                    type: number
+                    example: 200
+                required:
+                  - success
+                  - message
+                  - data
+                  - statusCode
+        "500":
+          description: Health check failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Health check failed
+                  statusCode:
+                    type: number
+                    example: 500
+                required:
+                  - success
+                  - message
+                  - statusCode

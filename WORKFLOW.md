@@ -19,7 +19,7 @@ This document explains every module, component, and subsystem in this template �
 11. [Configuration System](#11-configuration-system)
 12. [Logging System](#12-logging-system)
 13. [API Response Convention](#13-api-response-convention)
-14. [TypeSpec & OpenAPI Docs](#14-typespec--openapi-docs)
+14. [Zod-to-OpenAPI & Scalar Docs](#14-zod-to-openapi--scalar-docs)
 15. [Worker Process](#15-worker-process)
 16. [Utilities Reference](#16-utilities-reference)
 17. [Anomalies & Known Gaps](#17-anomalies--known-gaps)
@@ -101,7 +101,7 @@ src/index.ts
        ├─ setupEventHandlers()        register domain event listeners
        ├─ setupMiddlewares()          mount Express middleware stack
        ├─ setupRoutes()               mount all HTTP routers
-       └─ setupDocumentation()        mount Swagger UI if enabled
+       └─ setupDocumentation()        generate OpenAPI spec in-process, mount Scalar UI
   │
   └─ server.start()                   httpServer.listen(port)
 ```
@@ -160,14 +160,14 @@ Incoming Request
 
 **Files:** `src/db/queries/`, `src/db/migrations/`
 
-**Why it exists:** Keeps all SQL centralized and out of services. Services call query functions; they never write raw SQL themselves.
+**Why it exists:** Keeps all SQL centralized and out of services. Services instantiate a repository class; they never write raw SQL themselves.
 
 **How it works:**
 
 ```
 Service
   │
-  └─ createAuthQueries(db)   factory receives the pg.Pool
+  └─ new AuthRepository(db)      class receives the pg.Pool via constructor
        │
        ├─ findUserIdByEmail()      SELECT id FROM users WHERE email = $1
        ├─ findUserForLogin()       SELECT id, email, password_hash FROM users
@@ -175,7 +175,14 @@ Service
        └─ getCurrentUser()         SELECT id, email FROM users WHERE id = $1
 ```
 
-All query results are validated through Zod schemas (`ExistingUserSchema`, `LoginUserSchema`, `CurrentUserSchema`) before being returned — this catches schema drift between the DB and the application at runtime.
+**Repository classes** (`src/db/queries/`):
+
+| Class | File | Responsibility |
+|---|---|---|
+| `AuthRepository` | `auth.ts` | All auth-related user queries |
+| `UserRepository` | `users.ts` | General user lookups |
+
+Each repository takes `db: Pool` as its only constructor argument. All query results are validated through Zod schemas before being returned — this catches schema drift between the DB and the application at runtime.
 
 **Transactions** use a dedicated `client` from the pool (`db.connect()`), run `BEGIN`/`COMMIT`/`ROLLBACK`, and always call `client.release()` in `finally`.
 
@@ -367,28 +374,62 @@ Each feature module follows this layout:
 
 ```
 src/modules/<name>/
-  ├─ <name>.routes.ts    Router definition — validate() + controller object + route declarations
-  ├─ <name>.service.ts   Business logic — returns ApiResponse, never touches res
-  ├─ <name>.schema.ts    Zod schemas wrapping { body, params, query }
-  └─ <name>.events.ts    (optional) Domain event listeners for this module
+  ├─ <name>.controller.ts   Controller class — router, handler methods, DI wiring
+  ├─ <name>.service.ts      Service class — business logic, returns ApiResponse
+  ├─ <name>.schema.ts       Zod validation schemas for body/params/query
+  ├─ <name>.openapi.ts      OpenAPI path registrations via zod-to-openapi registry
+  └─ <name>.events.ts       (optional) Domain event listeners for this module
 ```
 
-**Route registration** is explicit — add a line to `src/modules/index.ts`:
+**Route registration** is explicit — instantiate the controller and mount its router in `src/modules/index.ts`:
 ```ts
-app.use(`${apiPrefix}/your-module`, createYourRouter(dependencies));
+const auth = new AuthController(dependencies);
+app.use(`${apiPrefix}/auth`, auth.router);
 ```
 
-**Controller pattern inside routes:**
+**Controller pattern:**
 ```ts
-const c = {
-  action: asyncHandler(async (req, res) => {
-    const response = await service.action(req.body);
-    sendResponse(res, response);
-  }),
-};
+export class AuthController {
+    readonly router: Router;
+    private readonly service: AuthService;
 
-router.post("/path", validate(schema), c.action);
+    constructor(dependencies: AppDependencies) {
+        this.router = Router();
+        this.service = AuthService.withDebug(dependencies.db, dependencies.eventBus);
+        this.registerRoutes();
+    }
+
+    private registerRoutes(): void {
+        this.router.post("/register", validate(register_schema), asyncHandler(this.register));
+    }
+
+    // Arrow functions — required for correct `this` binding when Express calls them
+    private register = async (req: AuthRequest, res: Response): Promise<void> => {
+        const response = await this.service.register(req.body);
+        sendResponse(res, response);
+    };
+}
 ```
+
+**Service pattern:**
+```ts
+export class AuthService {
+    private readonly repo: AuthRepository;
+
+    constructor(db: Pool, private readonly eventBus: DomainEventBus) {
+        this.repo = new AuthRepository(db);
+    }
+
+    async register(input: RegisterInput): Promise<ApiResponse> { ... }
+
+    // Always use this factory — it wraps the instance in createDebugProxy
+    static withDebug(db: Pool, eventBus: DomainEventBus): AuthService {
+        return createDebugProxy(new AuthService(db, eventBus), "AuthService");
+    }
+}
+```
+
+**Debug proxy** (`src/core/utils/debug_proxy.ts`): Every service is wrapped via `Service.withDebug()` which calls `createDebugProxy`. This intercepts every method call and logs `[ServiceName.method] --> START` with args, `<-- END` with duration, or `<-- ERROR` with duration and error message — all at `debug` level via the project logger. No code changes needed in the service itself.
 
 **Current modules:**
 
@@ -396,7 +437,7 @@ router.post("/path", validate(schema), c.action);
 |--------|--------|-------------|
 | `health` | `GET /health` | Server health metrics, DB ping, memory, uptime |
 | `auth` | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | User registration, login, current user |
-| `user` | (scaffolded, empty) | Placeholder for user management endpoints |
+| `user` | `GET /users` | User lookup by email (authenticated) |
 
 ---
 
@@ -487,30 +528,70 @@ All responses follow a single shape:
 
 ---
 
-## 14. TypeSpec & OpenAPI Docs
+## 14. Zod-to-OpenAPI & Scalar Docs
 
-**Files:** `docs/`, `openapi.yaml`
+**Files:** `src/config/openapi.ts`, `src/modules/*/*.openapi.ts`, `src/scripts/generate-openapi.ts`
 
-**Why TypeSpec instead of writing OpenAPI by hand:** TypeSpec is a typed DSL that compiles to OpenAPI 3. It catches inconsistencies at compile time and keeps docs co-located with the API design.
+**Why zod-to-openapi instead of TypeSpec:** API schemas are defined once in Zod (already used for runtime validation) and annotated with `.openapi({ example: ... })`. The same schemas drive both request validation and documentation — no separate DSL, no compile step, no drift between code and docs.
 
 **Structure:**
 ```
-docs/
-  ├─ main.tsp              entry point — imports all models and routes
-  ├─ tspconfig.yaml        compiler config
-  ├─ models/
-  │   └─ common.tsp        shared types: ApiResponse<T>, User, HealthMetrics, etc.
-  └─ routes/
-      ├─ health.tsp        GET /health
-      └─ auth.tsp          POST /auth/register, POST /auth/login, GET /auth/me
+src/config/openapi.ts          singleton registry + generateOpenApiDocument()
+src/modules/auth/auth.openapi.ts      registers POST /auth/register, /login, GET /auth/me
+src/modules/health/health.openapi.ts  registers GET /health
+src/scripts/generate-openapi.ts       CLI script — writes openapi.yaml to disk
 ```
 
-**Build:** `bun run docs:build` compiles TypeSpec → `openapi.yaml`. The Swagger UI at `/api/v1/docs` serves this file.
+**How it works:**
+
+```
+extendZodWithOpenApi(z)          called once in src/config/openapi.ts
+        │
+        ▼
+registry = new OpenAPIRegistry()
+        │
+        ├─ registry.registerComponent("securitySchemes", "BearerAuth", ...)
+        │
+        └─ each *.openapi.ts calls registry.registerPath({ method, path, ... })
+                │
+                ▼
+        generateOpenApiDocument()
+                │
+                └─► OpenApiGeneratorV3(registry.definitions).generateDocument(...)
+                        │
+                        ▼
+                  plain JS object (OpenAPI 3.0 spec)
+                        │
+                  ┌─────┴──────────────────────────────┐
+                  │                                    │
+                  ▼                                    ▼
+        apiReference({ spec: { content } })    YAML.stringify → openapi.yaml
+        served by Scalar at /api/v1/docs        written by docs:generate script
+```
+
+**Side-effect imports in `server.ts`:** The `*.openapi.ts` files are imported at the top of `server.ts` with no named import — just the side effect of calling `registry.registerPath()`:
+```ts
+import "~/modules/auth/auth.openapi";
+import "~/modules/health/health.openapi";
+```
+This ensures all paths are registered before `setupDocumentation()` calls `generateOpenApiDocument()`.
+
+**Scalar UI** replaces Swagger UI. It is served by `@scalar/express-api-reference` at the path configured in `config.yaml → documentation.swagger.path` (default `/docs`). The spec is generated in-process at startup — no YAML file is read at runtime.
+
+**Helmet CSP** is configured to allow Scalar's CDN assets:
+- `scriptSrc` includes `https://cdn.jsdelivr.net` and `'unsafe-inline'`
+- `workerSrc` includes `blob:` (Scalar uses a web worker for search)
 
 **Adding docs for a new route:**
-1. Create `docs/routes/<module>.tsp`
-2. Import it in `docs/main.tsp`
-3. Run `bun run docs:build`
+1. Create `src/modules/<name>/<name>.openapi.ts`
+2. Import `registry` from `~/config/openapi`
+3. Call `registry.registerPath({ ... })` for each endpoint
+4. Add `import "~/modules/<name>/<name>.openapi"` to both `src/core/server.ts` and `src/scripts/generate-openapi.ts`
+
+**Generating `openapi.yaml` to disk** (for CI, Postman, etc.):
+```
+bun run docs:generate
+```
 
 ---
 
@@ -545,6 +626,7 @@ bun run worker:start   (or worker:dev for watch mode)
 | File | What it provides |
 |------|-----------------|
 | `src/core/utils/api_response.ts` | `api_response`, `sendResponse`, `ApiResponse<T>`, `APIError`, `AuthError` |
+| `src/core/utils/debug_proxy.ts` | `createDebugProxy<T>` — wraps any class instance to log every method call at `debug` level |
 | `src/core/utils/time.ts` | `formatUptime(ms)` — human-readable duration string |
 | `src/core/utils/email.ts` | `EmailService` stub — replace `.send()` with your provider |
 | `src/core/utils/cache.ts` | Single-use in-memory `Cache` — values auto-delete on first `get()` |
@@ -565,7 +647,7 @@ These were found during the documentation pass:
 | `src/core/utils/types.ts` | Contains domain-specific enums (`EventCategory`, `CATEGORY`, `UserCSVRow`) that belong to a specific project, not a generic template | Carry-over from original project — clean up when adapting the template |
 | `src/core/utils/seed_utility.ts` | Contains project-specific seeding logic (CSV parsing, team name extraction) | Same as above — template carry-over |
 | `src/core/utils/cache.ts` | `Cache` constructor and `get()` call `log.warn()` on every use, which is noisy | Change to `log.debug()` for non-production noise reduction |
-| `src/modules/user/` | Directory exists with empty files (`user.handler.ts`, `user.schema.ts`, `user.service.ts`) | Scaffolded placeholder — populate or remove |
 | `src/db/deseed.ts` | File is empty | Remove or implement |
 | `EmailService.send()` | Logs a warning and does nothing | Wire to a real provider (Resend, Nodemailer, SES, etc.) |
 | `processEmailJob()` in queues | Only logs — does not call `EmailService` | Connect to `EmailService` when provider is ready |
+| `docs/` (TypeSpec) | TypeSpec files remain on disk but are no longer used — docs are now generated from `*.openapi.ts` files | Safe to delete the `docs/` directory and remove `@typespec/*` devDependencies |

@@ -10,7 +10,7 @@ Express + TypeScript + Bun backend template focused on fast iteration and produc
 - Explicit route registry — mount routers in `src/modules/index.ts`
 - Zod validation middleware (`validate(schema)`) applied per-route
 - Service-layer response pattern — services return `ApiResponse`, handlers just send
-- TypeSpec docs split per route (`docs/routes/*.tsp`) compiled to `openapi.yaml`
+- Zod-to-OpenAPI docs with Scalar UI (schemas defined once in Zod for both validation and docs)
 - JWT authentication middleware (access + refresh tokens)
 - Typed domain event bus (Node `EventEmitter` wrapper)
 - Socket.IO realtime support (same HTTP server port)
@@ -18,7 +18,7 @@ Express + TypeScript + Bun backend template focused on fast iteration and produc
 - Winston structured logging — console level is config-driven, files always capture everything
 - Per-request UUID (`X-Request-ID` header)
 - Audit logging — every authenticated request is written to `audit_logs`
-- Swagger UI at `/api/v1/docs`
+- Scalar UI at `/api/v1/docs`
 
 For a full explanation of every component, see [WORKFLOW.md](WORKFLOW.md).
 
@@ -89,8 +89,7 @@ bun run worker:dev
 | `bun run lint` | Biome lint check |
 | `bun run lint:fix` | Biome lint + auto-fix |
 | `bun run format` | Biome format |
-| `bun run docs:build` | Compile TypeSpec → `openapi.yaml` |
-| `bun run docs:watch` | Watch TypeSpec and recompile |
+| `bun run docs:generate` | Generate OpenAPI spec to `openapi.yaml` |
 | `bun run db:migrate` | Apply pending migrations |
 | `bun run db:migrate:status` | Show migration status |
 | `bun run db:migrate:down` | Roll back one migration |
@@ -124,7 +123,7 @@ src/
     realtime/socket.ts      Socket.IO setup
     middlewares/            All Express middleware (logger, jwt, validation, audit, etc.)
     routes/                 (legacy location — now use src/modules/index.ts)
-    utils/                  api_response, sendResponse, time, email, cache, types
+    utils/                  api_response, sendResponse, time, email, cache, types, debug_proxy
   db/
     queries/                SQL query functions (one file per domain)
     migrations/             SQL migration files
@@ -137,9 +136,7 @@ src/
     password.ts             PBKDF2-SHA512 hash + compare
     shutdown.ts             Graceful shutdown handler
 docs/
-  main.tsp                  TypeSpec entry point
-  models/common.tsp         Shared response/domain models
-  routes/                   Per-route TypeSpec files
+  (removed — docs are now generated from *.openapi.ts files)
 ```
 
 ---
@@ -147,23 +144,36 @@ docs/
 ## Adding a New Route Module
 
 1. Create the module directory:
-   ```
-   src/modules/<name>/
-     <name>.schema.ts    Zod schemas (wrap fields under body/params/query)
-     <name>.service.ts   Business logic returning ApiResponse
-     <name>.routes.ts    Router with validate() + controller + route declarations
-   ```
+    ```
+    src/modules/<name>/
+      <name>.schema.ts    Zod schemas (wrap fields under body/params/query)
+      <name>.service.ts   Business logic returning ApiResponse
+      <name>.routes.ts    Router with validate() + controller + route declarations
+      <name>.openapi.ts   OpenAPI path registrations via zod-to-openapi registry
+    ```
 
 2. Register the router in `src/modules/index.ts`:
-   ```ts
-   app.use(`${apiPrefix}/your-module`, createYourRouter(dependencies));
-   ```
+    ```ts
+    app.use(`${apiPrefix}/your-module`, createYourRouter(dependencies));
+    ```
 
-3. Add TypeSpec docs:
-   ```
-   docs/routes/<name>.tsp
-   ```
-   Import it in `docs/main.tsp`, then run `bun run docs:build`.
+3. Add OpenAPI docs:
+    ```ts
+    // src/modules/<name>/<name>.openapi.ts
+    import { registry } from "~/config/openapi";
+    
+    registry.registerPath({
+      method: "post",
+      path: "/your-module",
+      summary: "Create a thing",
+      request: { body: create_thing_schema },
+      responses: {
+        201: { description: "Thing created" },
+        400: { description: "Bad request" },
+      },
+    });
+    ```
+    Add `import "~/modules/<name>/<name>.openapi"` to both `src/core/server.ts` and `src/scripts/generate-openapi.ts`.
 
 ### Schema convention
 
@@ -280,4 +290,4 @@ DROP TABLE IF EXISTS posts;
 | `POST` | `/api/v1/auth/login` | — | Login, returns access + refresh tokens |
 | `GET` | `/api/v1/auth/me` | Bearer | Current authenticated user |
 
-Swagger UI: `http://localhost:8998/api/v1/docs`
+Scalar UI: `http://localhost:8998/api/v1/docs`

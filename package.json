@@ -12,10 +12,15 @@
         "lint": "biome check .",
         "lint:fix": "biome check --write .",
         "format": "biome format --write .",
+        "format:check": "biome format .",
         "typecheck": "tsc --noEmit",
+        "commitlint": "commitlint",
+        "lint-staged": "lint-staged",
+        "prepare": "lefthook install",
         "docs:generate": "bun run src/scripts/generate-openapi.ts",
         "db:migrate": "node-pg-migrate up --migrations-dir=src/db/migrations",
         "db:migrate:down": "node-pg-migrate down --migrations-dir=src/db/migrations",
+        "db:migrate:status": "node-pg-migrate status --migrations-dir=src/db/migrations",
         "db:migrate:new": "node-pg-migrate create --migration-file-language=sql --migrations-dir=src/db/migrations"
     },
     "keywords": [],
@@ -24,9 +29,9 @@
     "packageManager": "bun@1.2.22",
     "devDependencies": {
         "@biomejs/biome": "^2.4.12",
-        "@typespec/compiler": "^1.0.0",
-        "@typespec/http": "^1.0.0",
-        "@typespec/openapi3": "^1.0.0",
+        "@commitlint/cli": "^21.0.1",
+        "@commitlint/config-conventional": "^21.0.1",
+        "@types/bun": "latest",
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
         "@types/jsonwebtoken": "^9.0.10",
@@ -34,8 +39,12 @@
         "@types/node": "^25.6.0",
         "@types/pg": "^8.20.0",
         "@types/swagger-ui-express": "^4.1.8",
+        "@typespec/compiler": "^1.0.0",
+        "@typespec/http": "^1.0.0",
+        "@typespec/openapi3": "^1.0.0",
         "biome": "^0.3.3",
-        "@types/bun": "latest"
+        "lefthook": "^2.1.8",
+        "lint-staged": "^17.0.5"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.5.0",

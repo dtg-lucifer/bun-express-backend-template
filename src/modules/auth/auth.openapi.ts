@@ -1,26 +1,20 @@
 import { z } from "zod";
 import { registry } from "~/config/openapi";
 
-// ── Shared schemas ────────────────────────────────────────────────────────────
+const AuthUserSchema = z.object({
+    id: z.string().uuid(),
+    email: z.string().email(),
+    isActive: z.boolean(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+});
 
-const UserSchema = z
-    .object({
-        id: z.string().uuid().openapi({ example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }),
-        email: z.string().email().openapi({ example: "user@example.com" }),
-    })
-    .openapi("User");
-
-const ErrorResponseSchema = z
-    .object({
-        success: z.boolean().openapi({ example: false }),
-        message: z.string().openapi({ example: "Error message" }),
-        errors: z.record(z.string(), z.array(z.string())).optional(),
-        statusCode: z.number().openapi({ example: 400 }),
-        requestId: z.string().optional().openapi({ example: "req-uuid" }),
-    })
-    .openapi("ErrorResponse");
-
-// ── POST /auth/register ───────────────────────────────────────────────────────
+const ErrorResponseSchema = z.object({
+    success: z.boolean(),
+    message: z.string(),
+    code: z.string().optional(),
+    requestId: z.string().optional(),
+});
 
 registry.registerPath({
     method: "post",
@@ -33,8 +27,8 @@ registry.registerPath({
             content: {
                 "application/json": {
                     schema: z.object({
-                        email: z.string().email().openapi({ example: "user@example.com" }),
-                        password: z.string().min(8).openapi({ example: "password123" }),
+                        email: z.string().email(),
+                        password: z.string().min(8),
                     }),
                 },
             },
@@ -46,10 +40,9 @@ registry.registerPath({
             content: {
                 "application/json": {
                     schema: z.object({
-                        success: z.boolean().openapi({ example: true }),
-                        message: z.string().openapi({ example: "User registered" }),
-                        data: z.object({ user: UserSchema }),
-                        statusCode: z.number().openapi({ example: 201 }),
+                        success: z.boolean(),
+                        message: z.string(),
+                        data: z.object({ user: AuthUserSchema }),
                     }),
                 },
             },
@@ -58,14 +51,8 @@ registry.registerPath({
             description: "Email already registered",
             content: { "application/json": { schema: ErrorResponseSchema } },
         },
-        400: {
-            description: "Validation error",
-            content: { "application/json": { schema: ErrorResponseSchema } },
-        },
     },
 });
-
-// ── POST /auth/login ──────────────────────────────────────────────────────────
 
 registry.registerPath({
     method: "post",
@@ -78,8 +65,8 @@ registry.registerPath({
             content: {
                 "application/json": {
                     schema: z.object({
-                        email: z.string().email().openapi({ example: "user@example.com" }),
-                        password: z.string().min(1).openapi({ example: "password123" }),
+                        email: z.string().email(),
+                        password: z.string().min(1),
                     }),
                 },
             },
@@ -91,14 +78,15 @@ registry.registerPath({
             content: {
                 "application/json": {
                     schema: z.object({
-                        success: z.boolean().openapi({ example: true }),
-                        message: z.string().openapi({ example: "Login successful" }),
+                        success: z.boolean(),
+                        message: z.string(),
                         data: z.object({
-                            user: UserSchema,
-                            accessToken: z.string().openapi({ example: "eyJhbGci..." }),
-                            refreshToken: z.string().openapi({ example: "eyJhbGci..." }),
+                            user: AuthUserSchema,
+                            tokens: z.object({
+                                accessToken: z.string(),
+                                refreshToken: z.string(),
+                            }),
                         }),
-                        statusCode: z.number().openapi({ example: 200 }),
                     }),
                 },
             },
@@ -110,24 +98,21 @@ registry.registerPath({
     },
 });
 
-// ── GET /auth/me ──────────────────────────────────────────────────────────────
-
 registry.registerPath({
     method: "get",
     path: "/auth/me",
     tags: ["Authentication"],
-    summary: "Get the currently authenticated user",
+    summary: "Get currently authenticated user",
     security: [{ BearerAuth: [] }],
     responses: {
         200: {
-            description: "Current user returned",
+            description: "Current user",
             content: {
                 "application/json": {
                     schema: z.object({
-                        success: z.boolean().openapi({ example: true }),
-                        message: z.string().openapi({ example: "Current user" }),
-                        data: z.object({ user: UserSchema }),
-                        statusCode: z.number().openapi({ example: 200 }),
+                        success: z.boolean(),
+                        message: z.string(),
+                        data: z.object({ user: AuthUserSchema }),
                     }),
                 },
             },

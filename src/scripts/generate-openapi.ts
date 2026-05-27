@@ -11,6 +11,7 @@ import { generateOpenApiDocument } from "~/config/openapi";
 import { log } from "~/core/middlewares";
 import "~/modules/auth/auth.openapi";
 import "~/modules/health/health.openapi";
+import "~/modules/users/users.openapi";
 
 const doc = generateOpenApiDocument();
 const yaml = YAML.stringify(doc);

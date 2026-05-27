@@ -1,0 +1,24 @@
+output:
+  - execution_out
+  - execution_info
+  - failure
+
+pre-commit:
+  parallel: true
+  commands:
+    lint-staged:
+      run: bun lint-staged --quiet
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bun commitlint --edit {1}
+
+pre-push:
+  parallel: true
+  commands:
+    type-check:
+      run: bun run typecheck
+
+    lint-fix:
+      run: bun run lint:fix

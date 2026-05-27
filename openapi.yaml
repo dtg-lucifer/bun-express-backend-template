@@ -14,46 +14,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-  schemas:
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
-        email:
-          type: string
-          format: email
-          example: user@example.com
-      required:
-        - id
-        - email
-    ErrorResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: false
-        message:
-          type: string
-          example: Error message
-        errors:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
-        statusCode:
-          type: number
-          example: 400
-        requestId:
-          type: string
-          example: req-uuid
-      required:
-        - success
-        - message
-        - statusCode
+  schemas: {}
   parameters: {}
 paths:
   /auth/register:
@@ -71,11 +32,9 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: user@example.com
                 password:
                   type: string
                   minLength: 8
-                  example: password123
               required:
                 - email
                 - password
@@ -89,37 +48,58 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   message:
                     type: string
-                    example: User registered
                   data:
                     type: object
                     properties:
                       user:
-                        $ref: "#/components/schemas/User"
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+                          isActive:
+                            type: boolean
+                          createdAt:
+                            type: string
+                            format: date-time
+                          updatedAt:
+                            type: string
+                            format: date-time
+                        required:
+                          - id
+                          - email
+                          - isActive
+                          - createdAt
+                          - updatedAt
                     required:
                       - user
-                  statusCode:
-                    type: number
-                    example: 201
                 required:
                   - success
                   - message
                   - data
-                  - statusCode
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
         "409":
           description: Email already registered
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  code:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                  - success
+                  - message
   /auth/login:
     post:
       tags:
@@ -135,11 +115,9 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: user@example.com
                 password:
                   type: string
                   minLength: 1
-                  example: password123
               required:
                 - email
                 - password
@@ -153,49 +131,53 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   message:
                     type: string
-                    example: Login successful
                   data:
                     type: object
                     properties:
                       user:
-                        $ref: "#/components/schemas/User"
-                      accessToken:
-                        type: string
-                        example: eyJhbGci...
-                      refreshToken:
-                        type: string
-                        example: eyJhbGci...
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+                          isActive:
+                            type: boolean
+                          createdAt:
+                            type: string
+                            format: date-time
+                          updatedAt:
+                            type: string
+                            format: date-time
+                        required:
+                          - id
+                          - email
+                          - isActive
+                          - createdAt
+                          - updatedAt
+                      tokens:
+                        type: object
+                        properties:
+                          accessToken:
+                            type: string
+                          refreshToken:
+                            type: string
+                        required:
+                          - accessToken
+                          - refreshToken
                     required:
                       - user
-                      - accessToken
-                      - refreshToken
-                  statusCode:
-                    type: number
-                    example: 200
+                      - tokens
                 required:
                   - success
                   - message
                   - data
-                  - statusCode
         "401":
           description: Invalid credentials
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /auth/me:
-    get:
-      tags:
-        - Authentication
-      summary: Get the currently authenticated user
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Current user returned
           content:
             application/json:
               schema:
@@ -203,31 +185,84 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   message:
                     type: string
-                    example: Current user
+                  code:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                  - success
+                  - message
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get currently authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
                   data:
                     type: object
                     properties:
                       user:
-                        $ref: "#/components/schemas/User"
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+                          isActive:
+                            type: boolean
+                          createdAt:
+                            type: string
+                            format: date-time
+                          updatedAt:
+                            type: string
+                            format: date-time
+                        required:
+                          - id
+                          - email
+                          - isActive
+                          - createdAt
+                          - updatedAt
                     required:
                       - user
-                  statusCode:
-                    type: number
-                    example: 200
                 required:
                   - success
                   - message
                   - data
-                  - statusCode
         "401":
           description: Not authenticated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  code:
+                    type: string
+                  requestId:
+                    type: string
+                required:
+                  - success
+                  - message
   /health:
     get:
       tags:
@@ -361,3 +396,112 @@ paths:
                   - success
                   - message
                   - statusCode
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get user by email
+      security:
+        - BearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: email
+          required: true
+          name: email
+          in: query
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+                          isActive:
+                            type: boolean
+                          createdAt:
+                            type: string
+                            format: date-time
+                          updatedAt:
+                            type: string
+                            format: date-time
+                        required:
+                          - id
+                          - email
+                          - isActive
+                          - createdAt
+                          - updatedAt
+                    required:
+                      - user
+                required:
+                  - success
+                  - message
+                  - data
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get currently authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+                          isActive:
+                            type: boolean
+                          createdAt:
+                            type: string
+                            format: date-time
+                          updatedAt:
+                            type: string
+                            format: date-time
+                        required:
+                          - id
+                          - email
+                          - isActive
+                          - createdAt
+                          - updatedAt
+                    required:
+                      - user
+                required:
+                  - success
+                  - message
+                  - data

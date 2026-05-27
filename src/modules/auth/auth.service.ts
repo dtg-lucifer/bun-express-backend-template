@@ -1,80 +1,91 @@
-import type { Pool } from "pg";
-import type { DomainEventBus } from "~/core/events";
-import { generateRefreshToken, generateToken } from "~/core/middlewares";
-import { type ApiResponse, api_response } from "~/core/utils/api_response";
-import { createDebugProxy } from "~/core/utils/debug_proxy";
-import { AuthRepository } from "~/db/queries";
 import { compareHashedPassword, hashPassword } from "~/lib/password";
-import type { LoginInput, RegisterInput } from "./auth.schema";
+import type { IEventBus } from "~/shared/events";
+import { eventBus } from "~/shared/events";
+import { createDebugProxy } from "~/shared/logging";
+import { generateAccessToken, generateRefreshToken } from "~/shared/middleware/auth.middleware";
+import {
+    AuthUserNotFoundError,
+    InactiveUserError,
+    InvalidCredentialsError,
+    UserAlreadyExistsError,
+} from "./auth.errors";
+import type { AuthRepository, AuthUserRow } from "./auth.repository";
+import type { AuthLoginResponse, AuthUser, LoginInput, RegisterInput } from "./auth.types";
+
+function toAuthUser(user: AuthUserRow): AuthUser {
+    return {
+        id: user.id,
+        email: user.email,
+        isActive: user.is_active,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at,
+    };
+}
 
 export class AuthService {
-    private readonly repo: AuthRepository;
-
     constructor(
-        db: Pool,
-        private readonly eventBus: DomainEventBus,
-    ) {
-        this.repo = new AuthRepository(db);
-    }
+        private readonly authRepository: AuthRepository,
+        private readonly events: IEventBus = eventBus,
+    ) {}
 
-    async register(input: RegisterInput): Promise<ApiResponse> {
-        const existing = await this.repo.findUserIdByEmail(input.email);
+    async register(input: RegisterInput): Promise<{ user: AuthUser }> {
+        const existing = await this.authRepository.findByEmail(input.email);
         if (existing) {
-            return api_response.error("Email already registered", 409);
+            throw new UserAlreadyExistsError(input.email);
         }
 
         const passwordHash = await hashPassword(input.password);
-        const user = await this.repo.insertUserWithAudit({
+        const user = await this.authRepository.createWithAudit({
             email: input.email,
             passwordHash,
         });
 
-        this.eventBus.emit("auth.user.registered", {
+        this.events.emit("auth.user.registered", {
             userId: user.id,
             email: user.email,
         });
 
-        return api_response.success("User registered", { user }, 201);
+        return { user: toAuthUser(user) };
     }
 
-    async login(input: LoginInput): Promise<ApiResponse> {
-        const user = await this.repo.findUserForLogin(input.email);
+    async login(input: LoginInput): Promise<AuthLoginResponse> {
+        const user = await this.authRepository.findByEmail(input.email);
 
         if (!user) {
-            return api_response.error("Invalid email or password", 401);
+            throw new InvalidCredentialsError();
+        }
+
+        if (!user.is_active) {
+            throw new InactiveUserError();
         }
 
         const passwordOk = await compareHashedPassword(input.password, user.password_hash);
         if (!passwordOk) {
-            return api_response.error("Invalid email or password", 401);
+            throw new InvalidCredentialsError();
         }
 
         const payload = { id: user.id, email: user.email };
-        const accessToken = generateToken(payload);
-        const refreshToken = generateRefreshToken(payload);
 
-        return api_response.success(
-            "Login successful",
-            { user: payload, accessToken, refreshToken },
-            200,
-        );
+        return {
+            user: toAuthUser(user),
+            tokens: {
+                accessToken: generateAccessToken(payload),
+                refreshToken: generateRefreshToken(payload),
+            },
+        };
     }
 
-    async getCurrentUser(userId: string): Promise<ApiResponse> {
-        const user = await this.repo.getCurrentUser(userId);
+    async getCurrentUser(userId: string): Promise<{ user: AuthUser }> {
+        const user = await this.authRepository.findById(userId);
 
         if (!user) {
-            return api_response.error("User not found", 404);
+            throw new AuthUserNotFoundError();
         }
 
-        return api_response.success("Current user", { user }, 200);
+        return { user: toAuthUser(user) };
     }
 
-    /**
-     * Returns a debug-proxied instance of this service that logs every method
-     * call (args, duration, errors) via the project logger at `debug` level.
-     */
-    static withDebug(db: Pool, eventBus: DomainEventBus): AuthService {
-        return createDebugProxy(new AuthService(db, eventBus), "AuthService");
+    static withDebug(authRepository: AuthRepository, events: IEventBus = eventBus): AuthService {
+        return createDebugProxy(new AuthService(authRepository, events), "AuthService");
     }
 }

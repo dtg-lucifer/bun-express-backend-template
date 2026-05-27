@@ -1,11 +1,15 @@
-import { configManager } from "~/config/index";
-import type { DomainEventBus } from "~/core/events";
-import { log } from "~/core/middlewares";
+import { configManager } from "~/config";
 import { enqueueWelcomeEmailJob } from "~/core/queues";
+import { eventBus } from "~/shared/events";
+import { logger } from "~/shared/logging";
 
 let handlersRegistered = false;
 
-export const registerAuthEventHandlers = (eventBus: DomainEventBus): void => {
+/**
+ * Registers domain-event listeners for auth-related events.
+ * Safe to call multiple times.
+ */
+export function registerAuthEventListeners(): void {
     if (handlersRegistered) {
         return;
     }
@@ -14,9 +18,10 @@ export const registerAuthEventHandlers = (eventBus: DomainEventBus): void => {
 
     eventBus.on("auth.user.registered", async (payload) => {
         const workersConfig = configManager.getWorkersConfig();
+
         if (!workersConfig.notification_jobs.enabled) {
-            log.info(
-                `[EVENTS] notification_jobs disabled in config.yaml; skip welcome email for ${payload.email}`,
+            logger.info(
+                `[EVENTS] notification_jobs disabled; skip welcome email for ${payload.email}`,
             );
             return;
         }
@@ -30,12 +35,19 @@ export const registerAuthEventHandlers = (eventBus: DomainEventBus): void => {
             eventBus.emit("queue.job.enqueued", {
                 queue: "email-jobs",
                 jobName: job.name,
-                jobId: job.id ?? "unknown",
+                jobId: String(job.id ?? "unknown"),
             });
 
-            log.info(`[EVENTS] Queued welcome email job for ${payload.email}`);
+            logger.info(`[EVENTS] Queued welcome email job for ${payload.email}`);
         } catch (error) {
-            log.error("[EVENTS] Failed to enqueue welcome email job", error);
+            logger.error("[EVENTS] Failed to enqueue welcome email job", { err: error });
         }
     });
+}
+
+/**
+ * @deprecated Use `registerAuthEventListeners`.
+ */
+export const registerAuthEventHandlers = (_eventBus?: unknown): void => {
+    registerAuthEventListeners();
 };

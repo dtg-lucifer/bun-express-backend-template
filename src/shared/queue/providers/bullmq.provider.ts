@@ -18,7 +18,7 @@ interface WorkerWithName {
 export class BullMqQueueProvider implements IQueueProvider {
 	readonly name = "bullmq" as const;
 
-	private connection: IORedis | null = null;
+	private connection: any | null = null;
 	private readonly queues = new Map<string, QueueWithName>();
 	private readonly workers = new Set<WorkerWithName>();
 
@@ -29,7 +29,7 @@ export class BullMqQueueProvider implements IQueueProvider {
 				enableReadyCheck: false,
 			});
 
-			this.connection.on("error", (error) => {
+			this.connection.on("error", (error: Error) => {
 				logger.error("[BULLMQ] Redis connection error", { err: error });
 			});
 		}

@@ -18,9 +18,9 @@
 		"lint-staged": "lint-staged",
 		"prepare": "lefthook install",
 		"docs:generate": "bun run src/scripts/generate-openapi.ts",
-		"db:migrate": "node-pg-migrate up --migrations-dir=src/db/migrations",
-		"db:migrate:down": "node-pg-migrate down --migrations-dir=src/db/migrations",
-		"db:migrate:new": "node-pg-migrate create --migration-file-language=sql --migrations-dir=src/db/migrations"
+		"db:migrate": "node-pg-migrate up --migrations-dir=src/shared/database/migrations",
+		"db:migrate:down": "node-pg-migrate down --migrations-dir=src/shared/database/migrations",
+		"db:migrate:new": "node-pg-migrate create --migration-file-language=sql --migrations-dir=src/shared/database/migrations"
 	},
 	"keywords": [],
 	"author": "Piush Bose <mail@piush.in>",

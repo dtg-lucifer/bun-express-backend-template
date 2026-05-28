@@ -3,89 +3,90 @@ import type { IEventBus } from "~/shared/events";
 import { eventBus } from "~/shared/events";
 import { createDebugProxy } from "~/shared/logging";
 import { generateAccessToken, generateRefreshToken } from "~/shared/middleware/auth.middleware";
-import {
-    AuthUserNotFoundError,
-    InactiveUserError,
-    InvalidCredentialsError,
-    UserAlreadyExistsError,
-} from "./auth.errors";
-import type { AuthRepository, AuthUserRow } from "./auth.repository";
+import { AuthUserNotFoundError, InactiveUserError, InvalidCredentialsError, UserAlreadyExistsError } from "./auth.errors";
+import type { AuthUserRow, IAuthRepository } from "./auth.repository";
 import type { AuthLoginResponse, AuthUser, LoginInput, RegisterInput } from "./auth.types";
 
 function toAuthUser(user: AuthUserRow): AuthUser {
-    return {
-        id: user.id,
-        email: user.email,
-        isActive: user.is_active,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
-    };
+	return {
+		id: user.id,
+		email: user.email,
+		isActive: user.is_active,
+		createdAt: user.created_at,
+		updatedAt: user.updated_at,
+	};
 }
 
-export class AuthService {
-    constructor(
-        private readonly authRepository: AuthRepository,
-        private readonly events: IEventBus = eventBus,
-    ) {}
+export interface IAuthService {
+	register(input: RegisterInput): Promise<{ user: AuthUser }>;
+	login(input: LoginInput): Promise<AuthLoginResponse>;
+	getCurrentUser(userId: string): Promise<{ user: AuthUser }>;
+}
 
-    async register(input: RegisterInput): Promise<{ user: AuthUser }> {
-        const existing = await this.authRepository.findByEmail(input.email);
-        if (existing) {
-            throw new UserAlreadyExistsError(input.email);
-        }
+export class AuthService implements IAuthService {
+	constructor(
+		private readonly authRepository: IAuthRepository,
+		private readonly events: IEventBus = eventBus,
+	) {}
 
-        const passwordHash = await hashPassword(input.password);
-        const user = await this.authRepository.createWithAudit({
-            email: input.email,
-            passwordHash,
-        });
+	async register(input: RegisterInput): Promise<{ user: AuthUser }> {
+		const existing = await this.authRepository.findByEmail(input.email);
+		if (existing) {
+			throw new UserAlreadyExistsError(input.email);
+		}
 
-        this.events.emit("auth.user.registered", {
-            userId: user.id,
-            email: user.email,
-        });
+		const passwordHash = await hashPassword(input.password);
+		const user = await this.authRepository.createWithAudit({
+			email: input.email,
+			passwordHash,
+		});
 
-        return { user: toAuthUser(user) };
-    }
+		this.events.emit("auth.user.registered", {
+			userId: user.id,
+			email: user.email,
+		});
 
-    async login(input: LoginInput): Promise<AuthLoginResponse> {
-        const user = await this.authRepository.findByEmail(input.email);
+		return { user: toAuthUser(user) };
+	}
 
-        if (!user) {
-            throw new InvalidCredentialsError();
-        }
+	async login(input: LoginInput): Promise<AuthLoginResponse> {
+		const user = await this.authRepository.findByEmail(input.email);
 
-        if (!user.is_active) {
-            throw new InactiveUserError();
-        }
+		if (!user) {
+			throw new InvalidCredentialsError();
+		}
 
-        const passwordOk = await compareHashedPassword(input.password, user.password_hash);
-        if (!passwordOk) {
-            throw new InvalidCredentialsError();
-        }
+		if (!user.is_active) {
+			throw new InactiveUserError();
+		}
 
-        const payload = { id: user.id, email: user.email };
+		const passwordOk = await compareHashedPassword(input.password, user.password_hash);
+		if (!passwordOk) {
+			throw new InvalidCredentialsError();
+		}
 
-        return {
-            user: toAuthUser(user),
-            tokens: {
-                accessToken: generateAccessToken(payload),
-                refreshToken: generateRefreshToken(payload),
-            },
-        };
-    }
+		const payload = { id: user.id, email: user.email };
 
-    async getCurrentUser(userId: string): Promise<{ user: AuthUser }> {
-        const user = await this.authRepository.findById(userId);
+		return {
+			user: toAuthUser(user),
+			tokens: {
+				accessToken: generateAccessToken(payload),
+				refreshToken: generateRefreshToken(payload),
+			},
+		};
+	}
 
-        if (!user) {
-            throw new AuthUserNotFoundError();
-        }
+	async getCurrentUser(userId: string): Promise<{ user: AuthUser }> {
+		const user = await this.authRepository.findById(userId);
 
-        return { user: toAuthUser(user) };
-    }
+		if (!user) {
+			throw new AuthUserNotFoundError();
+		}
 
-    static withDebug(authRepository: AuthRepository, events: IEventBus = eventBus): AuthService {
-        return createDebugProxy(new AuthService(authRepository, events), "AuthService");
-    }
+		return { user: toAuthUser(user) };
+	}
+
+	static withDebug(authRepository: IAuthRepository, events: IEventBus = eventBus): IAuthService {
+		return createDebugProxy(new AuthService(authRepository, events), "AuthService");
+	}
 }

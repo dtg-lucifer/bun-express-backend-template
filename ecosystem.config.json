@@ -1,28 +1,28 @@
 {
-    "apps": [
-        {
-            "name": "api-server",
-            "script": "dist/index.js",
-            "interpreter": "bun",
-            "node_args": "--experimental-vm-modules",
-            "instances": 1,
-            "autorestart": true,
-            "max_memory_restart": "512M",
-            "env_production": {
-                "NODE_ENV": "production"
-            }
-        },
-        {
-            "name": "bullmq-worker",
-            "script": "dist/workers/index.js",
-            "interpreter": "bun",
-            "node_args": "--experimental-vm-modules",
-            "instances": 1,
-            "autorestart": true,
-            "max_memory_restart": "256M",
-            "env_production": {
-                "NODE_ENV": "production"
-            }
-        }
-    ]
+	"apps": [
+		{
+			"name": "api-server",
+			"script": "dist/index.js",
+			"interpreter": "bun",
+			"node_args": "--experimental-vm-modules",
+			"instances": 1,
+			"autorestart": true,
+			"max_memory_restart": "512M",
+			"env_production": {
+				"NODE_ENV": "production"
+			}
+		},
+		{
+			"name": "bullmq-worker",
+			"script": "dist/workers/index.js",
+			"interpreter": "bun",
+			"node_args": "--experimental-vm-modules",
+			"instances": 1,
+			"autorestart": true,
+			"max_memory_restart": "256M",
+			"env_production": {
+				"NODE_ENV": "production"
+			}
+		}
+	]
 }

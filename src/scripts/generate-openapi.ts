@@ -8,7 +8,7 @@ import * as YAML from "yaml";
 
 // Import the registry setup first, then all module definitions
 import { generateOpenApiDocument } from "~/config/openapi";
-import { log } from "~/core/middlewares";
+import { log } from "~/shared/middlewares";
 import "~/modules/auth/auth.openapi";
 import "~/modules/health/health.openapi";
 import "~/modules/users/users.openapi";

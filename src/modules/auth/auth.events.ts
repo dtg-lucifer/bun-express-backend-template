@@ -1,53 +1,58 @@
 import { configManager } from "~/config";
-import { enqueueWelcomeEmailJob } from "~/core/queues";
+import type { IEventBus } from "~/shared/events";
 import { eventBus } from "~/shared/events";
 import { logger } from "~/shared/logging";
+import { enqueueWelcomeEmailJob } from "~/shared/queues";
 
 let handlersRegistered = false;
+
+export interface AuthEventDependencies {
+	events?: IEventBus;
+}
 
 /**
  * Registers domain-event listeners for auth-related events.
  * Safe to call multiple times.
  */
-export function registerAuthEventListeners(): void {
-    if (handlersRegistered) {
-        return;
-    }
+export function registerAuthEventListeners(dependencies: AuthEventDependencies = {}): void {
+	if (handlersRegistered) {
+		return;
+	}
 
-    handlersRegistered = true;
+	handlersRegistered = true;
 
-    eventBus.on("auth.user.registered", async (payload) => {
-        const workersConfig = configManager.getWorkersConfig();
+	const events = dependencies.events ?? eventBus;
 
-        if (!workersConfig.notification_jobs.enabled) {
-            logger.info(
-                `[EVENTS] notification_jobs disabled; skip welcome email for ${payload.email}`,
-            );
-            return;
-        }
+	events.on("auth.user.registered", async (payload) => {
+		const workersConfig = configManager.getWorkersConfig();
 
-        try {
-            const job = await enqueueWelcomeEmailJob({
-                userId: payload.userId,
-                email: payload.email,
-            });
+		if (!workersConfig.notification_jobs.enabled) {
+			logger.info(`[EVENTS] notification_jobs disabled; skip welcome email for ${payload.email}`);
+			return;
+		}
 
-            eventBus.emit("queue.job.enqueued", {
-                queue: "email-jobs",
-                jobName: job.name,
-                jobId: String(job.id ?? "unknown"),
-            });
+		try {
+			const job = await enqueueWelcomeEmailJob({
+				userId: payload.userId,
+				email: payload.email,
+			});
 
-            logger.info(`[EVENTS] Queued welcome email job for ${payload.email}`);
-        } catch (error) {
-            logger.error("[EVENTS] Failed to enqueue welcome email job", { err: error });
-        }
-    });
+			events.emit("queue.job.enqueued", {
+				queue: "email-jobs",
+				jobName: job.name,
+				jobId: String(job.id ?? "unknown"),
+			});
+
+			logger.info(`[EVENTS] Queued welcome email job for ${payload.email}`);
+		} catch (error) {
+			logger.error("[EVENTS] Failed to enqueue welcome email job", { err: error });
+		}
+	});
 }
 
 /**
  * @deprecated Use `registerAuthEventListeners`.
  */
 export const registerAuthEventHandlers = (_eventBus?: unknown): void => {
-    registerAuthEventListeners();
+	registerAuthEventListeners();
 };

@@ -1,33 +1,33 @@
 {
-    "compilerOptions": {
-        "baseUrl": ".",
-        "target": "esnext",
-        "module": "esnext",
-        "moduleResolution": "bundler",
-        "lib": ["ES2022"],
-        "outDir": "dist",
-        "rootDir": "src",
-        "sourceMap": true,
-        "types": ["bun-types"],
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "strict": true,
-        "noImplicitAny": true,
-        "strictNullChecks": true,
-        "noUncheckedIndexedAccess": true,
-        "allowSyntheticDefaultImports": true,
-        "resolveJsonModule": true,
-        "skipLibCheck": true,
-        "paths": {
-            "~/*": ["./src/*"],
-            "~/config/*": ["./src/config/*"],
-            "~/lib/*": ["./src/lib/*"],
-            "~/core/*": ["./src/core/*"],
-            "~/modules/*": ["./src/modules/*"],
-            "~/db/*": ["./src/db/*"],
-            "~/types/*": ["./src/types/*"]
-        },
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true
-    }
+	"compilerOptions": {
+		"baseUrl": ".",
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2022"],
+		"outDir": "dist",
+		"rootDir": "src",
+		"sourceMap": true,
+		"types": ["bun-types"],
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"noUncheckedIndexedAccess": true,
+		"allowSyntheticDefaultImports": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"paths": {
+			"~/*": ["./src/*"],
+			"~/config/*": ["./src/config/*"],
+			"~/lib/*": ["./src/lib/*"],
+			"~/core/*": ["./src/core/*"],
+			"~/modules/*": ["./src/modules/*"],
+			"~/db/*": ["./src/db/*"],
+			"~/types/*": ["./src/types/*"]
+		},
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
+	}
 }

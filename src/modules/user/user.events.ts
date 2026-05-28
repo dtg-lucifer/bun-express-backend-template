@@ -1,16 +1,16 @@
-import type { DomainEventBus } from "~/core/events";
-import { log } from "~/core/middlewares";
+import type { DomainEventBus } from "~/shared/events";
+import { log } from "~/shared/middlewares";
 
 let handlersRegistered = false;
 
 export const registerUserEventHandlers = (eventBus: DomainEventBus): void => {
-    if (handlersRegistered) {
-        return;
-    }
+	if (handlersRegistered) {
+		return;
+	}
 
-    handlersRegistered = true;
+	handlersRegistered = true;
 
-    // Placeholder: add user domain event handlers here as the module grows.
-    log.debug("[EVENTS] User event handlers registered");
-    void eventBus; // suppress unused-variable warning until handlers are added
+	// Placeholder: add user domain event handlers here as the module grows.
+	log.debug("[EVENTS] User event handlers registered");
+	void eventBus; // suppress unused-variable warning until handlers are added
 };

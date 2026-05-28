@@ -1,3 +1,4 @@
+import type { ConnectionOptions } from "bullmq";
 import { type Job, type JobsOptions, Queue, type QueueOptions, Worker, type WorkerOptions } from "bullmq";
 import IORedis from "ioredis";
 import { configManager } from "~/config";
@@ -18,6 +19,7 @@ interface WorkerWithName {
 export class BullMqQueueProvider implements IQueueProvider {
 	readonly name = "bullmq" as const;
 
+	// biome-ignore lint/suspicious/noExplicitAny: Type compatibility issue with BullMQ and ioredis versions
 	private connection: any | null = null;
 	private readonly queues = new Map<string, QueueWithName>();
 	private readonly workers = new Set<WorkerWithName>();
@@ -67,7 +69,7 @@ export class BullMqQueueProvider implements IQueueProvider {
 		}
 
 		const queueOptions: QueueOptions = {
-			connection: this.getConnection(),
+			connection: this.getConnection() as ConnectionOptions,
 			defaultJobOptions: this.getDefaultJobOptions(),
 		};
 
